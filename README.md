@@ -73,24 +73,37 @@ Here, 1111 represents -1 in 4-bit two's complement.
 The project is divided into five Python files.
 
 ```text
-arithmetic_simulator/
+4-Bit-Arithmetic-Circuit-Simulator/
 │
-├── main.py
-├── multiplexer.py
-├── full_adder.py
-├── arithmetic_circuit.py
-└── test_circuit.py
+├── index.html              # Modern, interactive educational website
+├── styles.css              # Dark digital electronics / engineering design system
+├── simulator.js            # Core JavaScript circuit simulation & test engine
+├── circuit_diagrams.js     # Technically accurate interactive SVG schematic renderer
+├── app.js                  # UI controllers, presentation mode, stepper, sound
+├── server.py               # Lightweight local web server & runner
+│
+├── main.py                 # Original Python CLI controller
+├── multiplexer.py          # Python Multiplexer & carry-in logic
+├── full_adder.py           # Python 1-bit and 4-bit Ripple Carry Adder
+├── arithmetic_circuit.py   # Python top-level arithmetic circuit orchestrator
+└── test_circuit.py         # Python 1,024 automated verification test suite
 ```
 
 ### File Descriptions
 
 | File | Description |
 |---|---|
-| `main.py` | Main controller that handles user input, menu selection and output display. |
+| `index.html` | Interactive web dashboard featuring circuit diagrams first, live simulator, truth tables, and theory. |
+| `styles.css` | Professional engineering dark theme with glowing PCB traces, responsive layout, and projector mode. |
+| `simulator.js` | Direct port of the Python circuit logic for client-side execution, signal tracing, and 1,024 tests. |
+| `circuit_diagrams.js` | Interactive IEEE-standard SVG circuit diagrams with dynamic high/low logic wire illumination. |
+| `app.js` | UI logic, slide-deck presentation mode, step-by-step carry propagation animator, and Web Audio API. |
+| `server.py` | Local web server (`http://localhost:8000`) and unified runner. |
+| `main.py` | Original CLI controller that handles terminal user input, menu selection, and formatted output display. |
 | `multiplexer.py` | Selects the second operand Y and Carry-In according to S1 and S0. |
 | `full_adder.py` | Implements 1-bit Full Adder logic and connects four stages to create a 4-bit adder. |
 | `arithmetic_circuit.py` | Connects the multiplexer and 4-bit Full Adder to perform the selected operation. |
-| `test_circuit.py` | Tests all four arithmetic operations using different input combinations. |
+| `test_circuit.py` | Tests all four arithmetic operations using all 1,024 input combinations. |
 
 ## 5. Working Principle
 
@@ -170,6 +183,21 @@ python main.py
 ```bash
 python test_circuit.py
 ```
+
+### Step 5: Launch the Interactive Web Dashboard
+
+To launch the modern educational website with interactive circuit diagrams and simulation:
+
+```bash
+python server.py
+```
+
+Or simply open `index.html` in any web browser (Chrome, Firefox, Edge, Safari) — no external dependencies or installations required!
+
+To present in front of your professor:
+- Click **"▶ Presentation Mode"** or press Space/Arrow keys for the fullscreen projector slide deck.
+- Toggle **"📽️ Projector Mode"** for high-contrast presentation environments.
+- Toggle **"⚡ Run 1,024 Automated Tests"** to display real-time verification in the browser.
 
 ## 8. Sample Execution
 
