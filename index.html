@@ -3,1289 +3,512 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4-Bit Arithmetic Circuit Simulator | Interactive Engineering Dashboard</title>
-    <meta name="description" content="A modern, interactive and educational digital electronics simulator demonstrating a 4-bit Arithmetic Circuit with Full Adder, Multiplexer selection, and Carry Propagation.">
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23070B14%22/><text x=%2250%22 y=%2265%22 font-size=%2250%22 text-anchor=%22middle%22 fill=%22%2300F0FF%22 font-family=%22monospace%22 font-weight=%22bold%22>4b</text></svg>">
-    <!-- Google Fonts (Non-blocking with robust system font fallbacks) -->
+    <title>4-Bit Arithmetic Circuit Laboratory</title>
+    <meta name="description" content="Interactive digital logic laboratory simulating a 4-bit arithmetic circuit with gate-level full adders, multiplexer selection logic, and ripple carry propagation.">
+    <!-- Non-emoji Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232563EB%22/><text x=%2250%22 y=%2268%22 font-size=%2255%22 text-anchor=%22middle%22 fill=%22%23FFFFFF%22 font-family=%22monospace%22 font-weight=%22bold%22>4B</text></svg>">
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" media="print" onload="this.media='all'">
-    <noscript>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap">
-    </noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- TOP NAVIGATION BAR -->
-    <nav class="navbar" id="top-nav">
-        <div class="brand">
-            <div class="brand-icon">4b</div>
-            <span>4-Bit Arithmetic Circuit Simulator</span>
-            <span class="brand-badge">COA / Digital Logic</span>
+    <!-- ==========================================================================
+         HEADER TOOLBAR (LIGHT THEME, CLEAN, NO EMOJIS)
+         ========================================================================== -->
+    <header class="lab-header">
+        <div class="brand-section">
+            <span class="brand-badge">DIGITAL LOGIC LAB</span>
+            <div class="brand-titles">
+                <span class="brand-title">4-BIT ARITHMETIC CIRCUIT LABORATORY</span>
+                <span class="brand-subtitle">Common Ripple Carry Adder with Multiplexed Operands (Total = A + Y + Cin)</span>
+            </div>
         </div>
 
-        <ul class="nav-links">
-            <li><a href="#circuits-section" class="nav-link diagrams-priority">⚡ Circuit Diagrams (First)</a></li>
-            <li><a href="#simulator-section" class="nav-link">🧪 Live Simulator</a></li>
-            <li><a href="#tables-section" class="nav-link">📊 Truth Tables</a></li>
-            <li><a href="#theory-section" class="nav-link">🎓 Theory & Learning</a></li>
-            <li><a href="#architecture-section" class="nav-link">💻 Python Architecture</a></li>
-        </ul>
+        <div class="header-status-group">
+            <div class="status-pill">
+                <span class="status-dot" id="circuit-status-dot"></span>
+                <span id="circuit-status-text">Circuit Ready</span>
+            </div>
 
-        <div class="nav-actions">
-            <button class="btn btn-secondary" id="sound-toggle-btn" onclick="App.toggleSound()" title="Toggle Relay Click Sound Effects">
-                🔊 Sound: ON
+            <button class="btn btn-sm" id="sound-toggle-btn" onclick="App.toggleSound()" title="Toggle Relay Click Sound">
+                Sound: OFF
             </button>
-            <button class="btn btn-secondary" id="projector-btn" onclick="App.toggleProjectorMode()" title="Toggle High-Contrast Projector Display">
-                📽️ Projector Mode
-            </button>
-            <button class="btn btn-primary" onclick="App.openPresentationMode()" title="Open Fullscreen Slide Deck for Viva/Professor Presentation">
-                ▶ Presentation Mode
+            <button class="btn btn-sm" onclick="App.resetCircuit()" title="Reset Circuit (Key: R)">
+                Reset Circuit
             </button>
         </div>
-    </nav>
+    </header>
 
-    <!-- MAIN PAGE CONTENT -->
-    <main class="container">
+    <!-- ==========================================================================
+         MAIN WORKSPACE
+         ========================================================================== -->
+    <main class="lab-workspace">
 
-        <!-- HERO / PROJECT INTRODUCTION -->
-        <header class="hero">
-            <div class="hero-content">
-                <div class="hero-text">
-                    <span class="hero-tag">Computer Organization & Architecture • B.Tech 3rd Semester</span>
-                    <h1 class="hero-title">4-Bit Arithmetic Circuit Simulator</h1>
-                    <p class="hero-subtitle">
-                        An interactive, hardware-accurate digital logic simulation demonstrating how four fundamental arithmetic operations 
-                        (<strong>Addition</strong>, <strong>Subtraction</strong>, <strong>Increment</strong>, and <strong>Decrement</strong>) 
-                        are executed using a common 4-bit Ripple Carry Adder architecture paired with Multiplexer control lines (<span class="mono text-cyan">S1, S0</span>).
-                    </p>
-                    <div class="hero-metrics">
-                        <div class="metric-pill">
-                            <span class="metric-val">4</span>
-                            <span class="metric-lbl">Arithmetic Operations</span>
-                        </div>
-                        <div class="metric-pill">
-                            <span class="metric-val">4-Bit</span>
-                            <span class="metric-lbl">Ripple Carry Adder</span>
-                        </div>
-                        <div class="metric-pill">
-                            <span class="metric-val">S1, S0</span>
-                            <span class="metric-lbl">MUX Selection Lines</span>
-                        </div>
-                        <div class="metric-pill">
-                            <span class="metric-val">1,024</span>
-                            <span class="metric-lbl">Tests Verified (100%)</span>
-                        </div>
-                    </div>
-                    <div class="hero-cta">
-                        <a href="#circuits-section" class="btn btn-primary">
-                            ⚡ Inspect Circuit Diagrams First
-                        </a>
-                        <a href="#simulator-section" class="btn btn-secondary">
-                            🧪 Launch Live Interactive Lab
-                        </a>
-                        <button class="btn btn-emerald" onclick="App.runAutomatedTests(true)">
-                            ✓ Run 1,024 Automated Tests
-                        </button>
-                    </div>
-                </div>
-            </div>
+        <!-- ======================================================================
+             WORKBENCH GRID: CONTROLS (LEFT) + CIRCUIT WORKSPACE (RIGHT)
+             ====================================================================== -->
+        <div class="workbench-layout-grid">
 
-            <!-- MANDATORY PRESENTATION ORDER NOTIFICATION -->
-            <div class="priority-banner">
-                <div class="priority-banner-text">
-                    <strong>📌 Evaluation Requirement: Circuit Diagrams Presented FIRST</strong> — In accordance with academic evaluation standards, complete schematic circuit diagrams are placed at the very top of each circuit module, followed by identification, step-by-step signal paths, Boolean expressions, and interactive truth tables.
-                </div>
-                <a href="#circuits-section" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
-                    Jump to Schematics ↓
-                </a>
-            </div>
-        </header>
+            <!-- LEFT CONTROLS COLUMN -->
+            <div class="controls-column">
 
-        <!-- ==========================================================================
-             SECTION 1: CIRCUIT DIAGRAMS & DETAILED CIRCUIT PRESENTATIONS (FIRST!)
-             ========================================================================== -->
-        <section class="section" id="circuits-section">
-            <div class="section-header">
-                <div class="section-title-wrap">
-                    <span class="section-tag">Primary Technical Exhibit</span>
-                    <h2 class="section-title">Hardware Circuit Schematics & Analysis</h2>
-                    <p class="section-desc">
-                        Every circuit begins with a large, technically accurate schematic diagram followed by circuit identification, 
-                        signal tracing, Boolean equations, truth tables, and interactive input bit toggles.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Circuit Navigation Tabs -->
-            <div class="circuit-tabs">
-                <button class="circuit-tab active" data-target="all" onclick="App.switchCircuitTab('all')">
-                    📁 View All Circuits
-                </button>
-                <button class="circuit-tab" data-target="circuit-master" onclick="App.switchCircuitTab('circuit-master')">
-                    1. Master 4-Bit Arithmetic Circuit
-                </button>
-                <button class="circuit-tab" data-target="circuit-ripple" onclick="App.switchCircuitTab('circuit-ripple')">
-                    2. 4-Bit Ripple Carry Adder
-                </button>
-                <button class="circuit-tab" data-target="circuit-full-adder" onclick="App.switchCircuitTab('circuit-full-adder')">
-                    3. 1-Bit Full Adder
-                </button>
-                <button class="circuit-tab" data-target="circuit-half-adder" onclick="App.switchCircuitTab('circuit-half-adder')">
-                    4. 1-Bit Half Adder
-                </button>
-                <button class="circuit-tab" data-target="circuit-mux" onclick="App.switchCircuitTab('circuit-mux')">
-                    5. Multiplexer & Inversion Unit
-                </button>
-                <button class="circuit-tab" data-target="circuit-primitives" onclick="App.switchCircuitTab('circuit-primitives')">
-                    6. Logic Gate Primitives
-                </button>
-            </div>
-
-            <!-- ----------------------------------------------------------------------
-                 CIRCUIT 1: MASTER 4-BIT ARITHMETIC CIRCUIT
-                 ---------------------------------------------------------------------- -->
-            <article class="circuit-presentation" id="circuit-master">
-                <!-- 1. Circuit Diagram First -->
-                <div class="diagram-stage">
-                    <div class="diagram-stage-header">
-                        <span class="diagram-badge">CIRCUIT 1 • SCHEMATIC DIAGRAM FIRST</span>
-                        <span class="diagram-instructions">Click inputs below or in simulator to illuminate live signal paths</span>
-                    </div>
-                    <div id="master-circuit-svg-container"></div>
-                </div>
-
-                <!-- 2-6. Detailed Explanation Below Diagram -->
-                <div class="circuit-body">
-                    <!-- 2. Circuit Identification -->
-                    <div class="circuit-id-box">
-                        <h3 class="circuit-id-title">
-                            <span>1. Master 4-Bit Arithmetic Circuit (Multiplexer + Ripple Carry Adder)</span>
-                        </h3>
-                        <p class="circuit-id-purpose">
-                            <strong>Purpose:</strong> Serves as the central arithmetic processing core of the project. It implements a common adder architecture 
-                            that calculates <span class="mono text-cyan">Total = A + Y + Cin</span>, where four multiplexers select the second operand <span class="mono text-cyan">Y</span> 
-                            and carry logic selects <span class="mono text-cyan">Cin</span> based on two control lines <span class="mono text-cyan">S1</span> and <span class="mono text-cyan">S0</span>.
-                        </p>
+                <!-- 1. Selection Line Controls (S1, S0) -->
+                <div class="lab-card">
+                    <div class="card-title-bar">
+                        <span class="card-title">Selection Lines</span>
+                        <span class="card-badge" id="active-operation-name">ADDITION</span>
                     </div>
 
-                    <!-- 3. Step-by-Step Working -->
-                    <div class="circuit-step-box">
-                        <h4 class="sub-heading">Step-by-Step Signal Propagation</h4>
-                        <ol class="step-list">
-                            <li class="step-item">
-                                <span class="step-num">1</span>
-                                <div><strong>Control Line Decoding:</strong> Binary control lines <span class="mono text-cyan">S1</span> and <span class="mono text-cyan">S0</span> are delivered to the four multiplexers and the carry-in generator.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">2</span>
-                                <div><strong>Operand Y Selection:</strong> Each 4:1 multiplexer selects input: <span class="mono">B</span> for Addition (00), <span class="mono">B̅</span> (1's complement) for Subtraction (01), <span class="mono">0000</span> for Increment (10), or <span class="mono">1111</span> for Decrement (11).</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">3</span>
-                                <div><strong>Carry-In Activation:</strong> Cin is asserted to 1 for Subtraction (completing two's complement <span class="mono">B̅ + 1</span>) and for Increment (<span class="mono">+ 1</span>); it is 0 for Addition and Decrement.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">4</span>
-                                <div><strong>Ripple Carry Computation:</strong> Stage 0 adds <span class="mono">A0 + Y0 + Cin</span> producing sum <span class="mono">S0</span> and carry <span class="mono">C1</span>. Carry ripples sequentially through stages 1, 2, and 3.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">5</span>
-                                <div><strong>Final Output Assembly:</strong> Generates the 4-bit binary result vector <span class="mono text-cyan">S[3:0]</span> and final carry output <span class="mono text-cyan">Cout</span>.</div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <!-- 4. Boolean Expressions & 5. Truth Table -->
-                    <div class="circuit-step-box">
-                        <div class="equations-card">
-                            <h4 class="sub-heading">Boolean & Arithmetic Equations</h4>
-                            <div class="eq-row">
-                                <div class="eq-label">General Arithmetic Equation</div>
-                                <div class="eq-formula">Total = A + Y + Cin</div>
-                                <div class="eq-desc">Where A is the 4-bit first operand, Y is the MUX output, and Cin is the initial carry.</div>
+                    <div class="switch-control-card">
+                        <div class="switch-pairs-row">
+                            <div class="physical-toggle-box">
+                                <span class="toggle-label">Select S1</span>
+                                <button class="physical-switch-btn" id="switch-s1-btn" onclick="App.toggleSelectionLine('S1')">0</button>
+                                <span class="switch-status-sub">Toggle 0 / 1</span>
                             </div>
-                            <div class="eq-row">
-                                <div class="eq-label">Subtraction via Two's Complement</div>
-                                <div class="eq-formula">A - B = A + B̅ + 1</div>
-                                <div class="eq-desc">B̅ is obtained by bitwise NOT (1's complement); adding Cin=1 completes the two's complement.</div>
-                            </div>
-                        </div>
-
-                        <!-- 5. Function Selection Table -->
-                        <div class="truth-table-card">
-                            <h4 class="sub-heading">Circuit Function Table</h4>
-                            <table class="truth-table">
-                                <thead>
-                                    <tr>
-                                        <th>S1</th>
-                                        <th>S0</th>
-                                        <th>Y (MUX Output)</th>
-                                        <th>Cin</th>
-                                        <th>Operation</th>
-                                        <th>Total Sum Formula</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="mux-tt-row" data-s1="0" data-s0="0">
-                                        <td>0</td><td>0</td><td>B</td><td>0</td><td class="text-cyan">Addition</td><td>Total = A + B + 0</td>
-                                    </tr>
-                                    <tr class="mux-tt-row" data-s1="0" data-s0="1">
-                                        <td>0</td><td>1</td><td>B̅ (15 - B)</td><td>1</td><td class="text-cyan">Subtraction</td><td>Total = A + B̅ + 1 = A - B</td>
-                                    </tr>
-                                    <tr class="mux-tt-row" data-s1="1" data-s0="0">
-                                        <td>1</td><td>0</td><td>0000 (0)</td><td>1</td><td class="text-cyan">Increment</td><td>Total = A + 0000 + 1 = A + 1</td>
-                                    </tr>
-                                    <tr class="mux-tt-row" data-s1="1" data-s0="1">
-                                        <td>1</td><td>1</td><td>1111 (15)</td><td>0</td><td class="text-cyan">Decrement</td><td>Total = A + 1111 + 0 = A - 1</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="table-explanation">
-                                * The active row highlights in cyan according to the current operation selected in the simulator.
+                            <div class="physical-toggle-box">
+                                <span class="toggle-label">Select S0</span>
+                                <button class="physical-switch-btn" id="switch-s0-btn" onclick="App.toggleSelectionLine('S0')">0</button>
+                                <span class="switch-status-sub">Toggle 0 / 1</span>
                             </div>
                         </div>
                     </div>
-                </div>
-            </article>
 
-            <!-- ----------------------------------------------------------------------
-                 CIRCUIT 2: 4-BIT RIPPLE CARRY ADDER
-                 ---------------------------------------------------------------------- -->
-            <article class="circuit-presentation" id="circuit-ripple">
-                <!-- 1. Circuit Diagram First -->
-                <div class="diagram-stage">
-                    <div class="diagram-stage-header">
-                        <span class="diagram-badge">CIRCUIT 2 • SCHEMATIC DIAGRAM FIRST</span>
-                        <span class="diagram-instructions">Click bit labels (A0-A3, B0-B3, Cin) directly in diagram to toggle inputs</span>
-                    </div>
-                    <div id="ripple-adder-svg-container"></div>
-                </div>
-
-                <!-- 2-6. Detailed Explanation Below Diagram -->
-                <div class="circuit-body">
-                    <!-- 2. Circuit Identification -->
-                    <div class="circuit-id-box">
-                        <h3 class="circuit-id-title">
-                            <span>2. 4-Bit Ripple Carry Adder (RCA)</span>
-                        </h3>
-                        <p class="circuit-id-purpose">
-                            <strong>Purpose:</strong> Computes the parallel addition of two 4-bit binary numbers by cascading four individual 1-bit Full Adders in series. 
-                            The carry-out (<span class="mono">Cout</span>) of each stage is wired directly to the carry-in (<span class="mono">Cin</span>) of the next most significant stage.
-                        </p>
-                    </div>
-
-                    <!-- 3. Step-by-Step Working -->
-                    <div class="circuit-step-box">
-                        <h4 class="sub-heading">Step-by-Step Carry Propagation Flow</h4>
-                        <ol class="step-list">
-                            <li class="step-item">
-                                <span class="step-num">FA0</span>
-                                <div><strong>Stage 0 (LSB):</strong> Takes input bits <span class="mono">A0</span>, <span class="mono">B0</span>, and external <span class="mono">Cin</span>. Computes <span class="mono">S0</span> and generates carry <span class="mono">C1</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">FA1</span>
-                                <div><strong>Stage 1 (Bit 1):</strong> Cannot finalize its outputs until <span class="mono">C1</span> arrives from FA0. Computes <span class="mono">S1</span> and generates carry <span class="mono">C2</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">FA2</span>
-                                <div><strong>Stage 2 (Bit 2):</strong> Takes <span class="mono">A2</span>, <span class="mono">B2</span>, and incoming carry <span class="mono">C2</span>. Computes sum <span class="mono">S2</span> and carry <span class="mono">C3</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">FA3</span>
-                                <div><strong>Stage 3 (MSB):</strong> Takes <span class="mono">A3</span>, <span class="mono">B3</span>, and incoming carry <span class="mono">C3</span>. Generates final sum bit <span class="mono">S3</span> and the circuit's final <span class="mono">Cout</span>.</div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <!-- 4. Boolean Expressions & 5. Truth Table -->
-                    <div class="circuit-step-box">
-                        <div class="equations-card">
-                            <h4 class="sub-heading">Recursive Stage Equations</h4>
-                            <div class="eq-row">
-                                <div class="eq-label">Sum at Stage i (for i = 0, 1, 2, 3)</div>
-                                <div class="eq-formula">Si = Ai ⊕ Bi ⊕ Ci</div>
-                            </div>
-                            <div class="eq-row">
-                                <div class="eq-label">Carry at Stage i+1 (Ripple Carry)</div>
-                                <div class="eq-formula">C(i+1) = (Ai · Bi) + (Ci · (Ai ⊕ Bi))</div>
-                                <div class="eq-desc">Where C0 = Cin, and C4 = Final Carry Out (Cout).</div>
-                            </div>
-                            <div class="eq-row">
-                                <div class="eq-label">Propagation Delay Characteristic</div>
-                                <div class="eq-formula">Total Delay = 4 × t_adder</div>
-                                <div class="eq-desc">In hardware, each stage introduces gate delay as the carry ripples from LSB to MSB.</div>
-                            </div>
-                        </div>
-
-                        <!-- 6. Interactive Bit Controls -->
-                        <div class="diagram-controls" style="grid-column: span 2; margin-top: 1rem;">
-                            <span class="controls-label">⚡ Interactive Ripple Controls:</span>
-                            <div class="bit-button-group">
-                                <button class="bit-btn" onclick="App.toggleRippleCin()">Toggle Cin</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('a', 0)">Toggle A0</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('a', 1)">Toggle A1</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('a', 2)">Toggle A2</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('a', 3)">Toggle A3</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('b', 0)">Toggle B0</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('b', 1)">Toggle B1</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('b', 2)">Toggle B2</button>
-                                <button class="bit-btn" onclick="App.toggleRippleBit('b', 3)">Toggle B3</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- ----------------------------------------------------------------------
-                 CIRCUIT 3: 1-BIT FULL ADDER
-                 ---------------------------------------------------------------------- -->
-            <article class="circuit-presentation" id="circuit-full-adder">
-                <!-- 1. Circuit Diagram First -->
-                <div class="diagram-stage">
-                    <div class="diagram-stage-header">
-                        <span class="diagram-badge">CIRCUIT 3 • SCHEMATIC DIAGRAM FIRST</span>
-                        <span class="diagram-instructions">Click pins A, B, or Cin directly in diagram to toggle logic values</span>
-                    </div>
-                    <div id="full-adder-svg-container"></div>
-                </div>
-
-                <!-- 2-6. Detailed Explanation Below Diagram -->
-                <div class="circuit-body">
-                    <!-- 2. Circuit Identification -->
-                    <div class="circuit-id-box">
-                        <h3 class="circuit-id-title">
-                            <span>3. 1-Bit Full Adder (Constructed from 2 Half Adders & 1 OR Gate)</span>
-                        </h3>
-                        <p class="circuit-id-purpose">
-                            <strong>Purpose:</strong> Adds three 1-bit binary inputs (<span class="mono">A</span>, <span class="mono">B</span>, and carry input <span class="mono">Cin</span>) 
-                            and produces two 1-bit outputs: <span class="mono">Sum</span> and <span class="mono">Cout</span>. This is the fundamental building block of all multi-bit adders.
-                        </p>
-                    </div>
-
-                    <!-- 3. Step-by-Step Working -->
-                    <div class="circuit-step-box">
-                        <h4 class="sub-heading">Step-by-Step Internal Signal Path</h4>
-                        <ol class="step-list">
-                            <li class="step-item">
-                                <span class="step-num">HA1</span>
-                                <div><strong>Half Adder 1 (Inputs A & B):</strong> XOR gate 1 computes intermediate sum <span class="mono text-cyan">S1 = A ⊕ B</span>. AND gate 1 computes intermediate carry <span class="mono text-cyan">C1 = A · B</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">HA2</span>
-                                <div><strong>Half Adder 2 (Inputs S1 & Cin):</strong> XOR gate 2 computes the final sum <span class="mono text-cyan">Sum = S1 ⊕ Cin = A ⊕ B ⊕ Cin</span>. AND gate 2 computes carry generation <span class="mono text-cyan">C2 = S1 · Cin</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">OR</span>
-                                <div><strong>OR Gate (Combining C1 & C2):</strong> Combines the two carry conditions to generate <span class="mono text-cyan">Cout = C1 + C2</span>. Since C1 and C2 are mutually exclusive (cannot both be 1 simultaneously), an OR gate correctly outputs carry.</div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <!-- 4. Boolean Expressions & 5. Truth Table -->
-                    <div class="circuit-step-box">
-                        <div class="equations-card">
-                            <h4 class="sub-heading">Boolean Expressions</h4>
-                            <div class="eq-row">
-                                <div class="eq-label">Sum Equation</div>
-                                <div class="eq-formula">Sum = A ⊕ B ⊕ Cin</div>
-                                <div class="eq-desc">True when an odd number of inputs are 1 (parity function).</div>
-                            </div>
-                            <div class="eq-row">
-                                <div class="eq-label">Carry-Out Equation</div>
-                                <div class="eq-formula">Cout = (A · B) + (Cin · (A ⊕ B))</div>
-                                <div class="eq-desc">Also expressed in standard SOP form as Cout = AB + BCin + ACin.</div>
-                            </div>
-                        </div>
-
-                        <!-- 5. Truth Table (8 rows) -->
-                        <div class="truth-table-card">
-                            <h4 class="sub-heading">Full Adder Truth Table (2³ = 8 States)</h4>
-                            <table class="truth-table">
-                                <thead>
-                                    <tr><th>A</th><th>B</th><th>Cin</th><th>Sum</th><th>Cout</th><th>Decimal (A+B+Cin)</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="fa-tt-row" data-a="0" data-b="0" data-cin="0"><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
-                                    <tr class="fa-tt-row" data-a="0" data-b="0" data-cin="1"><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
-                                    <tr class="fa-tt-row" data-a="0" data-b="1" data-cin="0"><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
-                                    <tr class="fa-tt-row" data-a="0" data-b="1" data-cin="1"><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>2</td></tr>
-                                    <tr class="fa-tt-row" data-a="1" data-b="0" data-cin="0"><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
-                                    <tr class="fa-tt-row" data-a="1" data-b="0" data-cin="1"><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>2</td></tr>
-                                    <tr class="fa-tt-row" data-a="1" data-b="1" data-cin="0"><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>2</td></tr>
-                                    <tr class="fa-tt-row" data-a="1" data-b="1" data-cin="1"><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>3</td></tr>
-                                </tbody>
-                            </table>
-                            <div class="table-explanation">
-                                * Active row highlights automatically in real-time as you click inputs A, B, or Cin.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- ----------------------------------------------------------------------
-                 CIRCUIT 4: 1-BIT HALF ADDER
-                 ---------------------------------------------------------------------- -->
-            <article class="circuit-presentation" id="circuit-half-adder">
-                <!-- 1. Circuit Diagram First -->
-                <div class="diagram-stage">
-                    <div class="diagram-stage-header">
-                        <span class="diagram-badge">CIRCUIT 4 • SCHEMATIC DIAGRAM FIRST</span>
-                        <span class="diagram-instructions">Click inputs A or B directly in diagram to toggle logic values</span>
-                    </div>
-                    <div id="half-adder-svg-container"></div>
-                </div>
-
-                <!-- 2-6. Detailed Explanation Below Diagram -->
-                <div class="circuit-body">
-                    <!-- 2. Circuit Identification -->
-                    <div class="circuit-id-box">
-                        <h3 class="circuit-id-title">
-                            <span>4. 1-Bit Half Adder (HA)</span>
-                        </h3>
-                        <p class="circuit-id-purpose">
-                            <strong>Purpose:</strong> Adds two single binary digits (<span class="mono">A</span> and <span class="mono">B</span>) without considering a carry-in from a prior stage. 
-                            It serves as the introductory arithmetic circuit in digital electronics and forms half of a Full Adder.
-                        </p>
-                    </div>
-
-                    <!-- 3. Step-by-Step Working -->
-                    <div class="circuit-step-box">
-                        <h4 class="sub-heading">Step-by-Step Operation</h4>
-                        <ol class="step-list">
-                            <li class="step-item">
-                                <span class="step-num">1</span>
-                                <div><strong>Sum Generation:</strong> Inputs A and B enter the 2-input XOR gate. The XOR output produces 1 if and only if one input is 1 and the other is 0 (<span class="mono text-cyan">Sum = A ⊕ B</span>).</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">2</span>
-                                <div><strong>Carry Generation:</strong> Simultaneously, inputs A and B branch into a 2-input AND gate. The AND output produces 1 only when both A and B are 1 (<span class="mono text-cyan">Carry = A · B</span>).</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">3</span>
-                                <div><strong>Limitation:</strong> Because a Half Adder lacks a third input for incoming carry (<span class="mono">Cin</span>), it cannot be cascaded directly to perform multi-bit addition beyond the least significant bit (LSB).</div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <!-- 4. Boolean Expressions & 5. Truth Table -->
-                    <div class="circuit-step-box">
-                        <div class="equations-card">
-                            <h4 class="sub-heading">Boolean Expressions</h4>
-                            <div class="eq-row">
-                                <div class="eq-label">Sum Output</div>
-                                <div class="eq-formula">Sum = A ⊕ B = A'B + AB'</div>
-                            </div>
-                            <div class="eq-row">
-                                <div class="eq-label">Carry Output</div>
-                                <div class="eq-formula">Carry = A · B</div>
-                            </div>
-                        </div>
-
-                        <!-- 5. Truth Table -->
-                        <div class="truth-table-card">
-                            <h4 class="sub-heading">Half Adder Truth Table</h4>
-                            <table class="truth-table">
-                                <thead>
-                                    <tr><th>A</th><th>B</th><th>Sum (A ⊕ B)</th><th>Carry (A · B)</th><th>Decimal Sum</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="ha-tt-row" data-a="0" data-b="0"><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
-                                    <tr class="ha-tt-row" data-a="0" data-b="1"><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
-                                    <tr class="ha-tt-row" data-a="1" data-b="0"><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
-                                    <tr class="ha-tt-row" data-a="1" data-b="1"><td>1</td><td>1</td><td>0</td><td>1</td><td>2 (10 in binary)</td></tr>
-                                </tbody>
-                            </table>
-                            <div class="table-explanation">
-                                * Notice that when A=1 and B=1, Sum=0 and Carry=1, forming binary 10₂ = decimal 2.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- ----------------------------------------------------------------------
-                 CIRCUIT 5: MULTIPLEXER STAGE & INVERSION UNIT
-                 ---------------------------------------------------------------------- -->
-            <article class="circuit-presentation" id="circuit-mux">
-                <!-- 1. Circuit Diagram First -->
-                <div class="diagram-stage">
-                    <div class="diagram-stage-header">
-                        <span class="diagram-badge">CIRCUIT 5 • SCHEMATIC DIAGRAM FIRST</span>
-                        <span class="diagram-instructions">Click control lines S1 or S0 in diagram to toggle selected multiplexer channel</span>
-                    </div>
-                    <div id="mux-stage-svg-container"></div>
-                </div>
-
-                <!-- 2-6. Detailed Explanation Below Diagram -->
-                <div class="circuit-body">
-                    <!-- 2. Circuit Identification -->
-                    <div class="circuit-id-box">
-                        <h3 class="circuit-id-title">
-                            <span>5. Multiplexer Stage & Carry-In Generation Logic</span>
-                        </h3>
-                        <p class="circuit-id-purpose">
-                            <strong>Purpose:</strong> Controls which operand is supplied to the second input of the 4-bit Full Adder. Based on the selection lines 
-                            <span class="mono">S1</span> and <span class="mono">S0</span>, it passes <span class="mono">B</span>, the 1's complement <span class="mono">B̅</span>, 
-                            all zeros (<span class="mono">0000</span>), or all ones (<span class="mono">1111</span>), while configuring <span class="mono">Cin</span> appropriately.
-                        </p>
-                    </div>
-
-                    <!-- 3. Step-by-Step Working -->
-                    <div class="circuit-step-box">
-                        <h4 class="sub-heading">Operational Mechanics</h4>
-                        <ol class="step-list">
-                            <li class="step-item">
-                                <span class="step-num">00</span>
-                                <div><strong>Addition (S1=0, S0=0):</strong> MUX channels select <span class="mono">D0 = B</span>. Carry logic sets <span class="mono">Cin = 0</span>. Equation becomes <span class="mono">A + B + 0 = A + B</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">01</span>
-                                <div><strong>Subtraction (S1=0, S0=1):</strong> MUX channels select <span class="mono">D1 = B̅</span> (inverted via NOT gates). Carry logic asserts <span class="mono">Cin = 1</span>. Equation becomes <span class="mono">A + B̅ + 1 = A - B</span> in two's complement.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">10</span>
-                                <div><strong>Increment (S1=1, S0=0):</strong> MUX channels select <span class="mono">D2 = 0</span> (GND). Carry logic asserts <span class="mono">Cin = 1</span>. Equation becomes <span class="mono">A + 0 + 1 = A + 1</span>.</div>
-                            </li>
-                            <li class="step-item">
-                                <span class="step-num">11</span>
-                                <div><strong>Decrement (S1=1, S0=1):</strong> MUX channels select <span class="mono">D3 = 1</span> (Vcc), producing <span class="mono">1111₂</span> (-1 in 4-bit two's complement). Carry logic sets <span class="mono">Cin = 0</span>. Equation becomes <span class="mono">A + 15 + 0 = A - 1</span>.</div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <!-- 4. Boolean Expressions & 5. Truth Table -->
-                    <div class="circuit-step-box">
-                        <div class="equations-card">
-                            <h4 class="sub-heading">Multiplexer Output Equations</h4>
-                            <div class="eq-row">
-                                <div class="eq-label">Multiplexer Output for Bit i (Yi)</div>
-                                <div class="eq-formula">Yi = (S1' · S0' · Bi) + (S1' · S0 · Bi') + (S1 · S0 · 1)</div>
-                                <div class="eq-desc">When S1=1 and S0=0, D2=0, so the term evaluates to 0.</div>
-                            </div>
-                            <div class="eq-row">
-                                <div class="eq-label">Carry-In Logic Equation</div>
-                                <div class="eq-formula">Cin = S1 ⊕ S0 = (S1' · S0) + (S1 · S0')</div>
-                                <div class="eq-desc">Cin is 1 whenever S1 and S0 are different (for Subtraction and Increment).</div>
-                            </div>
-                        </div>
-
-                        <!-- 6. Interactive Controls -->
-                        <div class="diagram-controls" style="grid-column: span 2; margin-top: 1rem;">
-                            <span class="controls-label">⚡ Toggle MUX Control Lines:</span>
-                            <div class="bit-button-group">
-                                <button class="bit-btn" onclick="App.toggleMuxControl('s1')">Toggle S1</button>
-                                <button class="bit-btn" onclick="App.toggleMuxControl('s0')">Toggle S0</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-            <!-- ----------------------------------------------------------------------
-                 CIRCUIT 6: LOGIC GATE PRIMITIVES REFERENCE
-                 ---------------------------------------------------------------------- -->
-            <article class="circuit-presentation" id="circuit-primitives">
-                <div class="diagram-stage">
-                    <div class="diagram-stage-header">
-                        <span class="diagram-badge">CIRCUIT 6 • LOGIC GATES SCHEMATICS FIRST</span>
-                        <span class="diagram-instructions">Click inputs A and B on each gate to verify truth table responses</span>
-                    </div>
-                    <!-- 4 Gate SVGs in a row -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; width: 100%;">
-                        <div id="gate-svg-and"></div>
-                        <div id="gate-svg-or"></div>
-                        <div id="gate-svg-xor"></div>
-                        <div id="gate-svg-not"></div>
+                    <!-- Operation Selection Table -->
+                    <div class="op-table-wrap">
+                        <table class="op-table">
+                            <thead>
+                                <tr>
+                                    <th>S1</th>
+                                    <th>S0</th>
+                                    <th>Selected Y</th>
+                                    <th>Cin</th>
+                                    <th>Operation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="op-table-row active-op" data-s1="0" data-s0="0" onclick="App.setOperation(0, 0)">
+                                    <td>0</td><td>0</td><td>B</td><td>0</td><td>Addition (A + B)</td>
+                                </tr>
+                                <tr class="op-table-row" data-s1="0" data-s0="1" onclick="App.setOperation(0, 1)">
+                                    <td>0</td><td>1</td><td>B&#773;</td><td>1</td><td>Subtraction (A + B&#773; + 1)</td>
+                                </tr>
+                                <tr class="op-table-row" data-s1="1" data-s0="0" onclick="App.setOperation(1, 0)">
+                                    <td>1</td><td>0</td><td>0000</td><td>1</td><td>Increment (A + 1)</td>
+                                </tr>
+                                <tr class="op-table-row" data-s1="1" data-s0="1" onclick="App.setOperation(1, 1)">
+                                    <td>1</td><td>1</td><td>1111</td><td>0</td><td>Decrement (A - 1)</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div class="circuit-body">
-                    <div class="circuit-id-box">
-                        <h3 class="circuit-id-title">
-                            <span>6. Digital Logic Gate Primitives (AND, OR, XOR, NOT)</span>
-                        </h3>
-                        <p class="circuit-id-purpose">
-                            <strong>Purpose:</strong> The fundamental atomic components of digital electronics. In this project:
-                            <span class="mono text-cyan">XOR</span> computes bit sums, <span class="mono text-cyan">AND</span> computes carry generation, 
-                            <span class="mono text-cyan">OR</span> merges carry pathways, and <span class="mono text-cyan">NOT</span> produces 1's complement negation for subtraction.
-                        </p>
+                <!-- 2. Operand A Controls -->
+                <div class="lab-card">
+                    <div class="card-title-bar">
+                        <span class="card-title">Operand A Input</span>
+                        <span class="card-badge">0 to 15</span>
                     </div>
 
-                    <div class="circuit-step-box" style="grid-column: 1 / -1;">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
-                            <div class="equations-card">
-                                <h4>AND Gate</h4>
-                                <div class="eq-formula">Y = A · B</div>
-                                <p class="eq-desc">Output is 1 ONLY if both A AND B are 1. Used in carry generation.</p>
-                            </div>
-                            <div class="equations-card">
-                                <h4>OR Gate</h4>
-                                <div class="eq-formula">Y = A + B</div>
-                                <p class="eq-desc">Output is 1 if AT LEAST ONE input is 1. Used in carry combination.</p>
-                            </div>
-                            <div class="equations-card">
-                                <h4>XOR Gate</h4>
-                                <div class="eq-formula">Y = A ⊕ B</div>
-                                <p class="eq-desc">Output is 1 when inputs are DIFFERENT. Used for binary addition modulo 2.</p>
-                            </div>
-                            <div class="equations-card">
-                                <h4>NOT Gate</h4>
-                                <div class="eq-formula">Y = A' (Inverter)</div>
-                                <p class="eq-desc">Inverts logic state (0→1, 1→0). Used for 1's complement subtraction.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </article>
-
-        </section>
-
-        <!-- ==========================================================================
-             SECTION 2: INTERACTIVE 4-BIT ARITHMETIC CIRCUIT SIMULATOR (LIVE LAB)
-             ========================================================================== -->
-        <section class="section" id="simulator-section">
-            <div class="section-header">
-                <div class="section-title-wrap">
-                    <span class="section-tag">Interactive Hardware Workbench</span>
-                    <h2 class="section-title">Live 4-Bit Arithmetic Circuit Simulator</h2>
-                    <p class="section-desc">
-                        Provide 4-bit binary inputs A and B, select any of the four supported arithmetic operations, 
-                        and watch the actual circuit logic execute in real time with step-by-step carry propagation.
-                    </p>
-                </div>
-                <div>
-                    <button class="btn btn-secondary" onclick="App.randomizeInputs()">
-                        🎲 Randomize Inputs
-                    </button>
-                </div>
-            </div>
-
-            <div class="simulator-grid">
-
-                <!-- LEFT COLUMN: CONTROLS & INPUTS -->
-                <div class="sim-panel">
-                    <div class="panel-header">
-                        <h3 class="panel-title"><span>🎛️</span> Input Controls</h3>
-                        <span class="mono text-cyan" style="font-size: 0.8rem;">4-Bit Unsigned (0-15)</span>
-                    </div>
-
-                    <!-- OPERAND A -->
                     <div class="operand-box">
-                        <div class="operand-header">
-                            <span class="operand-name">Operand A <span class="mono text-muted">[A3 A2 A1 A0]</span></span>
-                            <span class="operand-decimal" id="sim-a-dec-display">5 (0101)</span>
+                        <div class="operand-header-row">
+                            <span class="operand-name">A [A3:A0]</span>
+                            <span class="operand-readout" id="sim-a-readout">5 (0101)</span>
                         </div>
-                        <div class="bit-toggle-row">
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">A3 (MSB)</span>
-                                <button class="toggle-switch" id="sim-a-bit-3" onclick="App.toggleSimBit('A', 3)">0</button>
+
+                        <!-- 4 Binary Switches for A -->
+                        <div class="bit-switches-quad">
+                            <div class="bit-cell">
+                                <span class="bit-tag">A3 (MSB)</span>
+                                <button class="bit-btn" id="sim-a-bit-3" onclick="App.toggleSimBit('A', 3)">0</button>
                             </div>
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">A2</span>
-                                <button class="toggle-switch" id="sim-a-bit-2" onclick="App.toggleSimBit('A', 2)">1</button>
+                            <div class="bit-cell">
+                                <span class="bit-tag">A2</span>
+                                <button class="bit-btn" id="sim-a-bit-2" onclick="App.toggleSimBit('A', 2)">1</button>
                             </div>
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">A1</span>
-                                <button class="toggle-switch" id="sim-a-bit-1" onclick="App.toggleSimBit('A', 1)">0</button>
+                            <div class="bit-cell">
+                                <span class="bit-tag">A1</span>
+                                <button class="bit-btn" id="sim-a-bit-1" onclick="App.toggleSimBit('A', 1)">0</button>
                             </div>
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">A0 (LSB)</span>
-                                <button class="toggle-switch" id="sim-a-bit-0" onclick="App.toggleSimBit('A', 0)">1</button>
+                            <div class="bit-cell">
+                                <span class="bit-tag">A0 (LSB)</span>
+                                <button class="bit-btn" id="sim-a-bit-0" onclick="App.toggleSimBit('A', 0)">1</button>
                             </div>
                         </div>
-                        <div class="operand-inputs">
-                            <input type="range" min="0" max="15" value="5" class="slider-input" id="sim-a-slider" oninput="App.setSimOperandDecimal('A', this.value)">
-                            <input type="number" min="0" max="15" value="5" class="number-input" id="sim-a-dec-input" onchange="App.setSimOperandDecimal('A', this.value)">
-                        </div>
-                        <div class="preset-chips">
-                            <span style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">Presets:</span>
-                            <button class="preset-chip" onclick="App.applyPreset('A', 0)">0</button>
-                            <button class="preset-chip" onclick="App.applyPreset('A', 5)">5</button>
-                            <button class="preset-chip" onclick="App.applyPreset('A', 8)">8</button>
-                            <button class="preset-chip" onclick="App.applyPreset('A', 15)">15</button>
+
+                        <div class="dec-input-row">
+                            <input type="range" min="0" max="15" value="5" class="range-slider" id="sim-a-slider" oninput="App.setOperandDecimal('A', this.value)">
+                            <input type="number" min="0" max="15" value="5" class="dec-number-input" id="sim-a-dec-input" onchange="App.setOperandDecimal('A', this.value)">
                         </div>
                     </div>
+                </div>
 
-                    <!-- OPERAND B -->
-                    <div class="operand-box" id="operand-b-container">
-                        <div class="operand-header">
-                            <span class="operand-name">Operand B <span class="mono text-muted">[B3 B2 B1 B0]</span></span>
-                            <span class="operand-decimal" id="sim-b-dec-display">3 (0011)</span>
+                <!-- 3. Operand B Controls -->
+                <div class="lab-card" id="operand-b-card">
+                    <div class="card-title-bar">
+                        <span class="card-title">Operand B Input</span>
+                        <span class="card-badge">0 to 15</span>
+                    </div>
+
+                    <div class="operand-box y-operand">
+                        <div class="operand-header-row">
+                            <span class="operand-name">B [B3:B0]</span>
+                            <span class="operand-readout" id="sim-b-readout">3 (0011)</span>
                         </div>
-                        <div class="bit-toggle-row">
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">B3 (MSB)</span>
-                                <button class="toggle-switch" id="sim-b-bit-3" onclick="App.toggleSimBit('B', 3)">0</button>
+
+                        <!-- 4 Binary Switches for B -->
+                        <div class="bit-switches-quad">
+                            <div class="bit-cell">
+                                <span class="bit-tag">B3 (MSB)</span>
+                                <button class="bit-btn" id="sim-b-bit-3" onclick="App.toggleSimBit('B', 3)">0</button>
                             </div>
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">B2</span>
-                                <button class="toggle-switch" id="sim-b-bit-2" onclick="App.toggleSimBit('B', 2)">0</button>
+                            <div class="bit-cell">
+                                <span class="bit-tag">B2</span>
+                                <button class="bit-btn" id="sim-b-bit-2" onclick="App.toggleSimBit('B', 2)">0</button>
                             </div>
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">B1</span>
-                                <button class="toggle-switch" id="sim-b-bit-1" onclick="App.toggleSimBit('B', 1)">1</button>
+                            <div class="bit-cell">
+                                <span class="bit-tag">B1</span>
+                                <button class="bit-btn" id="sim-b-bit-1" onclick="App.toggleSimBit('B', 1)">1</button>
                             </div>
-                            <div class="bit-toggle-cell">
-                                <span class="bit-pos">B0 (LSB)</span>
-                                <button class="toggle-switch" id="sim-b-bit-0" onclick="App.toggleSimBit('B', 0)">1</button>
+                            <div class="bit-cell">
+                                <span class="bit-tag">B0 (LSB)</span>
+                                <button class="bit-btn" id="sim-b-bit-0" onclick="App.toggleSimBit('B', 0)">1</button>
                             </div>
                         </div>
-                        <div class="operand-inputs">
-                            <input type="range" min="0" max="15" value="3" class="slider-input" id="sim-b-slider" oninput="App.setSimOperandDecimal('B', this.value)">
-                            <input type="number" min="0" max="15" value="3" class="number-input" id="sim-b-dec-input" onchange="App.setSimOperandDecimal('B', this.value)">
+
+                        <div class="dec-input-row">
+                            <input type="range" min="0" max="15" value="3" class="range-slider" id="sim-b-slider" oninput="App.setOperandDecimal('B', this.value)">
+                            <input type="number" min="0" max="15" value="3" class="dec-number-input" id="sim-b-dec-input" onchange="App.setOperandDecimal('B', this.value)">
                         </div>
-                        <div class="preset-chips">
-                            <span style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">Presets:</span>
-                            <button class="preset-chip" onclick="App.applyPreset('B', 0)">0</button>
-                            <button class="preset-chip" onclick="App.applyPreset('B', 3)">3</button>
-                            <button class="preset-chip" onclick="App.applyPreset('B', 7)">7</button>
-                            <button class="preset-chip" onclick="App.applyPreset('B', 15)">15</button>
-                        </div>
-                        <div id="operand-b-notice" style="font-size: 0.75rem; color: var(--text-cyan); margin-top: 0.5rem;">
+
+                        <div id="operand-b-notice" style="font-size: 0.68rem; color: var(--text-secondary); font-family: var(--font-mono);">
                             Active operand B
                         </div>
                     </div>
-
-                    <!-- OPERATION SELECTOR (S1, S0) -->
-                    <div style="margin-top: 1rem;">
-                        <label style="font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 0.5rem; display: block;">
-                            Select Arithmetic Operation (S1, S0)
-                        </label>
-                        <div class="operation-select-grid">
-                            <div class="op-card selected" data-s1="0" data-s0="0" onclick="App.setSimOperation(0, 0)">
-                                <span class="op-name">1. Addition</span>
-                                <span class="op-control-bits">S1=0, S0=0 (Cin=0)</span>
-                                <span class="op-math">A + B</span>
-                            </div>
-                            <div class="op-card" data-s1="0" data-s0="1" onclick="App.setSimOperation(0, 1)">
-                                <span class="op-name">2. Subtraction</span>
-                                <span class="op-control-bits">S1=0, S0=1 (Cin=1)</span>
-                                <span class="op-math">A + B̅ + 1</span>
-                            </div>
-                            <div class="op-card" data-s1="1" data-s0="0" onclick="App.setSimOperation(1, 0)">
-                                <span class="op-name">3. Increment</span>
-                                <span class="op-control-bits">S1=1, S0=0 (Cin=1)</span>
-                                <span class="op-math">A + 1</span>
-                            </div>
-                            <div class="op-card" data-s1="1" data-s0="1" onclick="App.setSimOperation(1, 1)">
-                                <span class="op-name">4. Decrement</span>
-                                <span class="op-control-bits">S1=1, S0=1 (Cin=0)</span>
-                                <span class="op-math">A - 1 (A + 1111)</span>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
 
-                <!-- RIGHT COLUMN: RESULTS & STAGE ANALYSIS -->
-                <div class="sim-panel">
-                    <div class="panel-header">
-                        <h3 class="panel-title"><span>💡</span> Simulation Output & Stage Analysis</h3>
-                        <span class="mono text-emerald" style="font-size: 0.8rem;">Live Hardware Execution</span>
-                    </div>
-
-                    <div class="sim-results-screen">
-                        <!-- LED OUTPUT DISPLAY BANNER -->
-                        <div class="main-result-banner">
-                            <div class="digital-display-group">
-                                <!-- 4-Bit Binary Result Bits -->
-                                <div class="led-display-box">
-                                    <span class="led-title">4-Bit Result [S3 S2 S1 S0]</span>
-                                    <div class="led-digits">
-                                        <div class="led-bit" id="led-s-3">1</div>
-                                        <div class="led-bit bit-0" id="led-s-2">0</div>
-                                        <div class="led-bit bit-0" id="led-s-1">0</div>
-                                        <div class="led-bit bit-0" id="led-s-0">0</div>
-                                    </div>
-                                </div>
-
-                                <!-- Carry Out LED -->
-                                <div class="led-display-box">
-                                    <span class="led-title">Carry Out (Cout)</span>
-                                    <div class="led-digits">
-                                        <div class="led-bit cout-bit bit-0" id="led-cout">0</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Decimal Display -->
-                            <div class="decimal-badge-box">
-                                <span class="led-title">Decimal Result</span>
-                                <div class="decimal-big" id="result-decimal-val">8</div>
-                                <span class="decimal-sub">Unsigned 0-15</span>
-                            </div>
-                        </div>
-
-                        <!-- SUBTRACTION SIGNED RESULT (IF APPLICABLE) -->
-                        <div id="signed-result-info" class="hidden" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: var(--radius-md); padding: 0.85rem 1.25rem;">
-                            <div style="font-family: var(--font-mono); font-size: 0.9rem;">
-                                <strong>Two's Complement Subtraction Analysis:</strong><br>
-                                Mathematical Difference (A - B): <span class="text-cyan mono font-bold" id="signed-diff-val">2</span> | 
-                                Borrow Status: <span id="borrow-flag-val" class="text-emerald">No Borrow (A ≥ B)</span>
-                            </div>
-                        </div>
-
-                        <!-- STATUS FLAGS ROW -->
-                        <div class="flags-row">
-                            <div class="flag-indicator">
-                                <span class="flag-light" id="flag-light-carry"></span>
-                                <span>CARRY (C)</span>
-                            </div>
-                            <div class="flag-indicator">
-                                <span class="flag-light" id="flag-light-overflow"></span>
-                                <span>OVERFLOW (V)</span>
-                            </div>
-                            <div class="flag-indicator">
-                                <span class="flag-light" id="flag-light-zero"></span>
-                                <span>ZERO (Z)</span>
-                            </div>
-                            <div class="flag-indicator">
-                                <span class="flag-light" id="flag-light-sign"></span>
-                                <span>NEGATIVE / SIGN (S)</span>
-                            </div>
-                        </div>
-
-                        <!-- STEP-BY-STEP PROPAGATION STEPPER CONTROLS -->
-                        <div class="stepper-bar">
-                            <div class="stepper-buttons">
-                                <button class="btn btn-primary" id="btn-step-anim" onclick="App.startStepAnimation()">
-                                    ▶ Step Animation
-                                </button>
-                            </div>
-                            <div class="stepper-progress">
-                                <span>Carry Flow:</span>
-                                <div class="step-pip" id="step-pip-0">0</div>
-                                <span>→</span>
-                                <div class="step-pip" id="step-pip-1">1</div>
-                                <span>→</span>
-                                <div class="step-pip" id="step-pip-2">2</div>
-                                <span>→</span>
-                                <div class="step-pip" id="step-pip-3">3</div>
-                            </div>
-                        </div>
-
-                        <!-- 4 STAGES ANALYSIS CARDS (STAGE 0, 1, 2, 3) -->
-                        <div class="stages-analysis-grid">
-                            <!-- Stage 0 -->
-                            <div class="stage-card" id="stage-card-0">
-                                <div class="stage-card-header">
-                                    <span>STAGE 0 (LSB)</span>
-                                    <span>FA0</span>
-                                </div>
-                                <div class="stage-data-list">
-                                    <div class="stage-data-row"><span>Bit A0:</span><span class="stage-data-val" id="stage-0-a">1</span></div>
-                                    <div class="stage-data-row"><span>Bit Y0:</span><span class="stage-data-val" id="stage-0-y">1</span></div>
-                                    <div class="stage-data-row"><span>Cin:</span><span class="stage-data-val" id="stage-0-cin">0</span></div>
-                                    <div class="stage-data-row" style="border-top: 1px solid rgba(56, 189, 248, 0.2); padding-top: 0.2rem;">
-                                        <span class="text-cyan">Sum S0:</span><span class="stage-data-val text-cyan" id="stage-0-sum">0</span>
-                                    </div>
-                                    <div class="stage-data-row">
-                                        <span class="text-emerald">Carry C1:</span><span class="stage-data-val text-emerald" id="stage-0-cout">1</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Stage 1 -->
-                            <div class="stage-card" id="stage-card-1">
-                                <div class="stage-card-header">
-                                    <span>STAGE 1</span>
-                                    <span>FA1</span>
-                                </div>
-                                <div class="stage-data-list">
-                                    <div class="stage-data-row"><span>Bit A1:</span><span class="stage-data-val" id="stage-1-a">0</span></div>
-                                    <div class="stage-data-row"><span>Bit Y1:</span><span class="stage-data-val" id="stage-1-y">1</span></div>
-                                    <div class="stage-data-row"><span>C1:</span><span class="stage-data-val" id="stage-1-cin">1</span></div>
-                                    <div class="stage-data-row" style="border-top: 1px solid rgba(56, 189, 248, 0.2); padding-top: 0.2rem;">
-                                        <span class="text-cyan">Sum S1:</span><span class="stage-data-val text-cyan" id="stage-1-sum">0</span>
-                                    </div>
-                                    <div class="stage-data-row">
-                                        <span class="text-emerald">Carry C2:</span><span class="stage-data-val text-emerald" id="stage-1-cout">1</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Stage 2 -->
-                            <div class="stage-card" id="stage-card-2">
-                                <div class="stage-card-header">
-                                    <span>STAGE 2</span>
-                                    <span>FA2</span>
-                                </div>
-                                <div class="stage-data-list">
-                                    <div class="stage-data-row"><span>Bit A2:</span><span class="stage-data-val" id="stage-2-a">1</span></div>
-                                    <div class="stage-data-row"><span>Bit Y2:</span><span class="stage-data-val" id="stage-2-y">0</span></div>
-                                    <div class="stage-data-row"><span>C2:</span><span class="stage-data-val" id="stage-2-cin">1</span></div>
-                                    <div class="stage-data-row" style="border-top: 1px solid rgba(56, 189, 248, 0.2); padding-top: 0.2rem;">
-                                        <span class="text-cyan">Sum S2:</span><span class="stage-data-val text-cyan" id="stage-2-sum">0</span>
-                                    </div>
-                                    <div class="stage-data-row">
-                                        <span class="text-emerald">Carry C3:</span><span class="stage-data-val text-emerald" id="stage-2-cout">1</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Stage 3 -->
-                            <div class="stage-card" id="stage-card-3">
-                                <div class="stage-card-header">
-                                    <span>STAGE 3 (MSB)</span>
-                                    <span>FA3</span>
-                                </div>
-                                <div class="stage-data-list">
-                                    <div class="stage-data-row"><span>Bit A3:</span><span class="stage-data-val" id="stage-3-a">0</span></div>
-                                    <div class="stage-data-row"><span>Bit Y3:</span><span class="stage-data-val" id="stage-3-y">0</span></div>
-                                    <div class="stage-data-row"><span>C3:</span><span class="stage-data-val" id="stage-3-cin">1</span></div>
-                                    <div class="stage-data-row" style="border-top: 1px solid rgba(56, 189, 248, 0.2); padding-top: 0.2rem;">
-                                        <span class="text-cyan">Sum S3:</span><span class="stage-data-val text-cyan" id="stage-3-sum">1</span>
-                                    </div>
-                                    <div class="stage-data-row">
-                                        <span class="text-emerald">Cout:</span><span class="stage-data-val text-emerald" id="stage-3-cout">0</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MATHEMATICAL NARRATIVE CARD -->
-                        <div class="math-narrative-card">
-                            <h4>Mathematical Verification & Signal Trace</h4>
-                            <div class="math-formula-box" id="sim-math-formula">
-                                Total = A + Y + Cin = 5 + 3 + 0 = 8 | 4-Bit Result = 8 (Cout = 0)
-                            </div>
-                            <p class="math-explanation-text" id="sim-math-narrative">
-                                Loading circuit verification narrative...
-                            </p>
-                        </div>
-                    </div>
+                <!-- Presets & Input Tools -->
+                <div style="display: flex; gap: 0.4rem; justify-content: space-between;">
+                    <button class="btn btn-sm" onclick="App.randomizeInputs()">Randomize</button>
+                    <button class="btn btn-sm" onclick="App.applyPreset(5, 3)">5 and 3</button>
+                    <button class="btn btn-sm" onclick="App.applyPreset(15, 15)">15 and 15</button>
+                    <button class="btn btn-sm" onclick="App.applyPreset(0, 0)">Zero</button>
                 </div>
 
             </div>
-        </section>
 
-        <!-- ==========================================================================
-             SECTION 3: COMPLETE TRUTH TABLES REFERENCE
-             ========================================================================== -->
-        <section class="section" id="tables-section">
-            <div class="section-header">
-                <div class="section-title-wrap">
-                    <span class="section-tag">Digital Logic Truth Matrices</span>
-                    <h2 class="section-title">Comprehensive Truth Tables & Verification</h2>
-                    <p class="section-desc">
-                        Direct mapping of input vectors to outputs across all implemented circuits and gates.
-                    </p>
-                </div>
-            </div>
+            <!-- RIGHT CIRCUIT WORKSPACE SECTION -->
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem;">
-                <!-- Full Adder Table -->
-                <div class="truth-table-card">
-                    <h3 class="sub-heading">Full Adder (Sum = A ⊕ B ⊕ Cin, Cout = AB + BCin + ACin)</h3>
-                    <table class="truth-table">
-                        <thead>
-                            <tr><th>A</th><th>B</th><th>Cin</th><th>Sum</th><th>Cout</th><th>Decimal</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr class="fa-tt-row" data-a="0" data-b="0" data-cin="0"><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
-                            <tr class="fa-tt-row" data-a="0" data-b="0" data-cin="1"><td>0</td><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td></tr>
-                            <tr class="fa-tt-row" data-a="0" data-b="1" data-cin="0"><td>0</td><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
-                            <tr class="fa-tt-row" data-a="0" data-b="1" data-cin="1"><td>0</td><td>1</td><td>1</td><td>0</td><td>1</td><td>2</td></tr>
-                            <tr class="fa-tt-row" data-a="1" data-b="0" data-cin="0"><td>1</td><td>0</td><td>0</td><td>1</td><td>0</td><td>1</td></tr>
-                            <tr class="fa-tt-row" data-a="1" data-b="0" data-cin="1"><td>1</td><td>0</td><td>1</td><td>0</td><td>1</td><td>2</td></tr>
-                            <tr class="fa-tt-row" data-a="1" data-b="1" data-cin="0"><td>1</td><td>1</td><td>0</td><td>0</td><td>1</td><td>2</td></tr>
-                            <tr class="fa-tt-row" data-a="1" data-b="1" data-cin="1"><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td><td>3</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Half Adder Table -->
-                <div class="truth-table-card">
-                    <h3 class="sub-heading">Half Adder (Sum = A ⊕ B, Carry = A · B)</h3>
-                    <table class="truth-table">
-                        <thead>
-                            <tr><th>A</th><th>B</th><th>Sum</th><th>Carry</th><th>Binary</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr class="ha-tt-row" data-a="0" data-b="0"><td>0</td><td>0</td><td>0</td><td>0</td><td>00₂</td></tr>
-                            <tr class="ha-tt-row" data-a="0" data-b="1"><td>0</td><td>1</td><td>1</td><td>0</td><td>01₂</td></tr>
-                            <tr class="ha-tt-row" data-a="1" data-b="0"><td>1</td><td>0</td><td>1</td><td>0</td><td>01₂</td></tr>
-                            <tr class="ha-tt-row" data-a="1" data-b="1"><td>1</td><td>1</td><td>0</td><td>1</td><td>10₂</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Master Selection Table -->
-                <div class="truth-table-card" style="grid-column: 1 / -1;">
-                    <h3 class="sub-heading">Arithmetic Circuit Operation Table (Total = A + Y + Cin)</h3>
-                    <table class="truth-table">
-                        <thead>
-                            <tr>
-                                <th>S1</th><th>S0</th><th>Y Input (4-Bit)</th><th>Cin</th><th>Operation</th><th>Arithmetic Logic</th><th>Hardware Realization</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="mux-tt-row" data-s1="0" data-s0="0">
-                                <td>0</td><td>0</td><td>B</td><td>0</td><td class="text-cyan font-bold">Addition</td><td>Total = A + B + 0</td><td>B is routed un-inverted, Cin grounded</td>
-                            </tr>
-                            <tr class="mux-tt-row" data-s1="0" data-s0="1">
-                                <td>0</td><td>1</td><td>B̅ (1's comp)</td><td>1</td><td class="text-cyan font-bold">Subtraction</td><td>Total = A + B̅ + 1 = A - B</td><td>B inverted via NOT, Cin asserted high (+1)</td>
-                            </tr>
-                            <tr class="mux-tt-row" data-s1="1" data-s0="0">
-                                <td>1</td><td>0</td><td>0000</td><td>1</td><td class="text-cyan font-bold">Increment</td><td>Total = A + 0 + 1 = A + 1</td><td>Y forced to zero, Cin asserted high (+1)</td>
-                            </tr>
-                            <tr class="mux-tt-row" data-s1="1" data-s0="1">
-                                <td>1</td><td>1</td><td>1111 (-1 in 2's comp)</td><td>0</td><td class="text-cyan font-bold">Decrement</td><td>Total = A + 15 + 0 = A - 1</td><td>Y forced to all ones, Cin grounded</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==========================================================================
-             SECTION 4: STRUCTURED LEARNING & THEORY SECTION
-             ========================================================================== -->
-        <section class="section" id="theory-section">
-            <div class="section-header">
-                <div class="section-title-wrap">
-                    <span class="section-tag">Undergraduate Curriculum Guide</span>
-                    <h2 class="section-title">Digital Electronics & Computer Architecture Theory</h2>
-                    <p class="section-desc">
-                        Prepared for viva examination and conceptual evaluation in 3rd Semester B.Tech Computer Science & Engineering.
-                    </p>
-                </div>
-            </div>
-
-            <div class="theory-grid">
-                <!-- Concept 1 -->
-                <div class="theory-card">
-                    <div class="theory-card-header">
-                        <div class="theory-icon">01</div>
-                        <h3 class="theory-title">Binary Number System & 4-Bit Nibbles</h3>
-                    </div>
-                    <div class="theory-body">
-                        A bit (binary digit) is the fundamental unit of digital information, holding either <span class="mono text-cyan">0</span> or <span class="mono text-cyan">1</span>. 
-                        A grouping of 4 bits is technically termed a <strong>nibble</strong>.
-                        <div class="theory-highlight">
-                            • Unsigned Range: 0000₂ to 1111₂ (0 to 15 in decimal)<br>
-                            • Signed (2's Complement): 1000₂ to 0111₂ (-8 to +7 in decimal)
-                        </div>
-                        In CPU architectures, 4-bit ALUs formed the historical basis for microprocessors (such as the Intel 4004) before scaling to 8, 16, 32, and 64 bits.
-                    </div>
-                </div>
-
-                <!-- Concept 2 -->
-                <div class="theory-card">
-                    <div class="theory-card-header">
-                        <div class="theory-icon">02</div>
-                        <h3 class="theory-title">Half Adder vs Full Adder</h3>
-                    </div>
-                    <div class="theory-body">
-                        The key distinction lies in the handling of carry inputs:
-                        <div class="theory-highlight">
-                            • <strong>Half Adder:</strong> Accepts 2 inputs (A, B). Generates Sum and Carry. Cannot accept an incoming carry.<br>
-                            • <strong>Full Adder:</strong> Accepts 3 inputs (A, B, Cin). Generates Sum and Cout. Cascades into n-bit parallel adders.
-                        </div>
-                        A Full Adder is architecturally constructed using two Half Adders and one OR gate: HA1 combines A and B; HA2 adds Cin to that partial sum; the OR gate merges both carry generation conditions.
-                    </div>
-                </div>
-
-                <!-- Concept 3 -->
-                <div class="theory-card">
-                    <div class="theory-card-header">
-                        <div class="theory-icon">03</div>
-                        <h3 class="theory-title">Two's Complement Subtraction</h3>
-                    </div>
-                    <div class="theory-body">
-                        Modern computers do not build a separate hardware subtractor. Instead, subtraction is converted into addition using <strong>two's complement</strong>:
-                        <div class="theory-highlight">
-                            A - B = A + (-B) = A + (B̅ + 1)
-                        </div>
-                        By bitwise inverting operand B (1's complement) and injecting a 1 through the adder's Carry-In (<span class="mono">Cin=1</span>), the adder hardware executes subtraction natively!
-                    </div>
-                </div>
-
-                <!-- Concept 4 -->
-                <div class="theory-card">
-                    <div class="theory-card-header">
-                        <div class="theory-icon">04</div>
-                        <h3 class="theory-title">Carry vs. Borrow Interpretation</h3>
-                    </div>
-                    <div class="theory-body">
-                        In two's complement subtraction using an adder:
-                        <div class="theory-highlight">
-                            • <strong>Cout = 1:</strong> No borrow was required (A ≥ B). The positive result is directly in binary.<br>
-                            • <strong>Cout = 0:</strong> A borrow occurred (A &lt; B). The result is negative and is formatted in 2's complement.
-                        </div>
-                        This inverse carry relationship is fundamental to how CPU status register flags (e.g., the C flag in x86 or ARM) interpret subtraction.
-                    </div>
-                </div>
-
-                <!-- Concept 5 -->
-                <div class="theory-card">
-                    <div class="theory-card-header">
-                        <div class="theory-icon">05</div>
-                        <h3 class="theory-title">Carry Propagation & Ripple Delay</h3>
-                    </div>
-                    <div class="theory-body">
-                        In a Ripple Carry Adder (RCA), each stage must wait for the carry bit to ripple through from the preceding lower-order stage:
-                        <div class="theory-highlight">
-                            Total Delay = N × t_stage
-                        </div>
-                        While RCA requires minimal hardware (linear gate count O(N)), carry ripple introduces a latency trade-off. For higher-performance CPUs, 
-                        Carry-Lookahead Adders (CLA) predict carries in parallel to minimize latency.
-                    </div>
-                </div>
-
-                <!-- Concept 6 -->
-                <div class="theory-card">
-                    <div class="theory-card-header">
-                        <div class="theory-icon">06</div>
-                        <h3 class="theory-title">Role in Modern CPU ALUs</h3>
-                    </div>
-                    <div class="theory-body">
-                        The Arithmetic Logic Unit (ALU) of a central processing unit uses control signals from the CPU Instruction Decoder 
-                        to select arithmetic and logic operations.
-                        <div class="theory-highlight">
-                            Opcode → Control Lines (S1, S0) → Multiplexer → Adder Matrix
-                        </div>
-                        This project faithfully simulates the core arithmetic sub-unit of a classic M. Morris Mano computer architecture model.
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ==========================================================================
-             SECTION 5: TECHNICAL ARCHITECTURE & PYTHON REPOSITORY MAPPING
-             ========================================================================== -->
-        <section class="section" id="architecture-section">
-            <div class="section-header">
-                <div class="section-title-wrap">
-                    <span class="section-tag">Implementation Details</span>
-                    <h2 class="section-title">Source Code Architecture & Verification</h2>
-                    <p class="section-desc">
-                        Preserves and documents the original Python project files while providing an interactive browser-based test runner.
-                    </p>
-                </div>
-            </div>
-
-            <div class="arch-grid">
-                <!-- Repository File Tree Explorer -->
-                <div class="file-tree-card">
-                    <h3 class="sub-heading">Repository File Structure</h3>
-                    <ul class="tree-list">
-                        <li class="tree-item active" data-file="arithmetic_circuit.py" onclick="App.renderFilePreview('arithmetic_circuit.py')">
-                            <span class="tree-icon-file">📄</span> arithmetic_circuit.py (Master Circuit)
-                        </li>
-                        <li class="tree-item" data-file="full_adder.py" onclick="App.renderFilePreview('full_adder.py')">
-                            <span class="tree-icon-file">📄</span> full_adder.py (1-Bit & 4-Bit Adders)
-                        </li>
-                        <li class="tree-item" data-file="multiplexer.py" onclick="App.renderFilePreview('multiplexer.py')">
-                            <span class="tree-icon-file">📄</span> multiplexer.py (MUX & Carry Selector)
-                        </li>
-                        <li class="tree-item" data-file="main.py" onclick="App.renderFilePreview('main.py')">
-                            <span class="tree-icon-file">📄</span> main.py (Interactive CLI Menu)
-                        </li>
-                        <li class="tree-item" data-file="test_circuit.py" onclick="App.renderFilePreview('test_circuit.py')">
-                            <span class="tree-icon-file">📄</span> test_circuit.py (1,024 Test Cases)
-                        </li>
-                    </ul>
-
-                    <div class="file-detail-view">
-                        <h4 id="file-view-title" style="color: var(--cyan-glow); font-size: 0.95rem; margin-bottom: 0.35rem;">
-                            arithmetic_circuit.py
-                        </h4>
-                        <p id="file-view-purpose" style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
-                            Connects Multiplexer and 4-bit Full Adder.
-                        </p>
-                        <div class="file-code-preview" id="file-view-code"></div>
-                    </div>
-                </div>
-
-                <!-- Browser-Based 1,024 Tests Verification Suite -->
-                <div class="test-suite-card">
-                    <h3 class="sub-heading">Automated Verification Suite (1,024 Tests)</h3>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
-                        Mirrors the verification performed by <span class="mono text-cyan">python test_circuit.py</span>. 
-                        Exhaustively tests all 16 × 16 = 256 input combinations for all four operations against expected mathematical formulas.
-                    </p>
-
-                    <div class="test-summary-badge" id="test-grand-status">
-                        <span>STATUS: 100% PASSED</span>
-                        <span>1,024 / 1,024 Tests</span>
-                    </div>
-
-                    <div class="test-progress-bar">
-                        <div class="test-progress-fill" id="test-progress-fill"></div>
-                    </div>
-
-                    <div class="test-ops-list" id="test-operations-list">
-                        <!-- Populated by JavaScript -->
-                    </div>
-
-                    <div style="margin-top: 1.5rem;">
-                        <button class="btn btn-emerald" style="width: 100%;" onclick="App.runAutomatedTests(true)">
-                            ⚡ Re-Run Complete 1,024 Test Suite
+                <!-- Simulation Stepper Toolbar -->
+                <div class="sim-controls-bar">
+                    <div class="stepper-actions">
+                        <button class="btn btn-primary" id="btn-exec-run" onclick="App.runAnimation()">
+                            Run Simulation
+                        </button>
+                        <button class="btn" id="btn-exec-pause" onclick="App.pauseAnimation()" disabled>
+                            Pause
+                        </button>
+                        <button class="btn" onclick="App.stepBackward()" title="Step Backward (Left Arrow)">
+                            Step Back
+                        </button>
+                        <button class="btn" onclick="App.stepForward()" title="Step Forward (Right Arrow)">
+                            Step Forward
                         </button>
                     </div>
+
+                    <!-- 6-Stage Pipeline Tracker -->
+                    <div class="pipeline-tracker">
+                        <span>Stages:</span>
+                        <div class="pipe-node" id="pipe-node-1" title="Multiplexer selection">1. MUX</div>
+                        <span>&rarr;</span>
+                        <div class="pipe-node" id="pipe-node-2" title="Full Adder 0 (LSB)">2. FA0</div>
+                        <span>&rarr;</span>
+                        <div class="pipe-node" id="pipe-node-3" title="Full Adder 1">3. FA1</div>
+                        <span>&rarr;</span>
+                        <div class="pipe-node" id="pipe-node-4" title="Full Adder 2">4. FA2</div>
+                        <span>&rarr;</span>
+                        <div class="pipe-node" id="pipe-node-5" title="Full Adder 3 (MSB)">5. FA3</div>
+                        <span>&rarr;</span>
+                        <div class="pipe-node" id="pipe-node-6" title="Result Output">6. Result</div>
+                    </div>
+
+                    <!-- Speed Controller -->
+                    <div class="speed-adjuster">
+                        <span id="speed-readout-lbl">1.0s / stage</span>
+                        <input type="range" min="300" max="2500" step="100" value="1000" class="range-slider" style="width: 80px;" oninput="App.setAnimationSpeed(this.value)">
+                    </div>
+                </div>
+
+                <!-- MAIN GATE-LEVEL CIRCUIT SCHEMATIC (SVG) -->
+                <div class="circuit-main-section">
+                    <div class="circuit-header-bar">
+                        <span class="circuit-header-title">
+                            Single 4-Bit Arithmetic Circuit Architecture (Gate-Level Implementation)
+                        </span>
+
+                        <div class="circuit-legend-bar">
+                            <div class="legend-item">
+                                <span class="legend-bar wire-a"></span>
+                                <span>Input A</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-bar wire-y"></span>
+                                <span>Input Y (MUX)</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-bar wire-carry"></span>
+                                <span>Carry Chain</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-bar wire-ctrl"></span>
+                                <span>Control S1, S0</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-bar active-high"></span>
+                                <span>Logic 1</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-bar inactive-low"></span>
+                                <span>Logic 0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technical SVG Canvas -->
+                    <div class="svg-viewport-wrapper" id="main-circuit-svg-container">
+                        <!-- Populated by CircuitDiagrams.renderGateLevelCircuit -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ======================================================================
+             BOTTOM SECTION: RESULTS, ANALYSIS & SIGNAL TRACES
+             ====================================================================== -->
+        <div class="bottom-results-grid">
+
+            <!-- Result Indicators & Borrow Analysis -->
+            <div class="lab-card">
+                <div class="card-title-bar">
+                    <span class="card-title">Circuit Output Results</span>
+                    <span class="card-badge">Digital Register</span>
+                </div>
+
+                <div class="result-output-banner">
+                    <!-- Result Bits: S3 S2 S1 S0 -->
+                    <div class="result-bits-row">
+                        <div class="result-bit-cell">
+                            <span class="bit-cell-label">S3 (MSB)</span>
+                            <div class="bit-display-box" id="res-bit-s3">1</div>
+                        </div>
+                        <div class="result-bit-cell">
+                            <span class="bit-cell-label">S2</span>
+                            <div class="bit-display-box" id="res-bit-s2">0</div>
+                        </div>
+                        <div class="result-bit-cell">
+                            <span class="bit-cell-label">S1</span>
+                            <div class="bit-display-box" id="res-bit-s1">0</div>
+                        </div>
+                        <div class="result-bit-cell">
+                            <span class="bit-cell-label">S0 (LSB)</span>
+                            <div class="bit-display-box" id="res-bit-s0">0</div>
+                        </div>
+                        <div class="result-bit-cell" style="margin-left: 0.75rem;">
+                            <span class="bit-cell-label" style="color: var(--wire-carry);">Cout</span>
+                            <div class="bit-display-box is-cout" id="res-bit-cout">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Decimal Total -->
+                    <div class="decimal-total-block">
+                        <span class="decimal-title">Decimal Result</span>
+                        <span class="decimal-value" id="res-dec-total">8</span>
+                        <span class="decimal-sub">4-Bit Vector Value</span>
+                    </div>
+                </div>
+
+                <!-- Subtraction Borrow Analysis (Shown for Subtraction) -->
+                <div class="narrative-box hidden" id="subtraction-borrow-card" style="border-left: 3px solid var(--wire-a);">
+                    <div style="font-weight: 700; color: var(--text-primary); font-family: var(--font-mono);">
+                        Two's Complement Subtraction Verification
+                    </div>
+                    <div>
+                        Mathematical Difference (A - B): <strong id="sub-diff-val" style="color: var(--wire-a);">2</strong> | 
+                        Borrow Status: <strong id="sub-borrow-val">0 (No borrow: A &gt;= B)</strong>
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-secondary);">
+                        In 2's complement adder subtraction, Carry-Out = 1 signifies no borrow occurred (A &gt;= B). Carry-Out = 0 signifies a borrow occurred (A &lt; B).
+                    </div>
+                </div>
+
+                <!-- Status Flags -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; text-align: center; font-family: var(--font-mono); font-size: 0.75rem;">
+                    <div style="border: 1px solid var(--border-medium); padding: 0.35rem; border-radius: var(--radius-sm); background: var(--bg-surface);">
+                        <div style="color: var(--text-muted); font-size: 0.65rem;">CARRY (C)</div>
+                        <strong id="flag-lamp-c">0</strong>
+                    </div>
+                    <div style="border: 1px solid var(--border-medium); padding: 0.35rem; border-radius: var(--radius-sm); background: var(--bg-surface);">
+                        <div style="color: var(--text-muted); font-size: 0.65rem;">OVERFLOW (V)</div>
+                        <strong id="flag-lamp-v">0</strong>
+                    </div>
+                    <div style="border: 1px solid var(--border-medium); padding: 0.35rem; border-radius: var(--radius-sm); background: var(--bg-surface);">
+                        <div style="color: var(--text-muted); font-size: 0.65rem;">ZERO (Z)</div>
+                        <strong id="flag-lamp-z">0</strong>
+                    </div>
+                    <div style="border: 1px solid var(--border-medium); padding: 0.35rem; border-radius: var(--radius-sm); background: var(--bg-surface);">
+                        <div style="color: var(--text-muted); font-size: 0.65rem;">SIGN (S)</div>
+                        <strong id="flag-lamp-s">1</strong>
+                    </div>
                 </div>
             </div>
-        </section>
+
+            <!-- Gate Signal Table & Verification Narrative -->
+            <div class="lab-card">
+                <div class="card-title-bar">
+                    <span class="card-title">Full Adder Stage Gate Signals</span>
+                    <span class="card-badge">P, G, H, Sum, Cout</span>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="signals-summary-table">
+                        <thead>
+                            <tr>
+                                <th>Stage</th>
+                                <th>A</th>
+                                <th>Y</th>
+                                <th>Cin</th>
+                                <th>P (A&#8853;Y)</th>
+                                <th>G (A&middot;Y)</th>
+                                <th>Sum</th>
+                                <th>Cout</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="tbl-row-0">
+                                <td>FA0 (LSB)</td>
+                                <td id="tbl-a-0">1</td>
+                                <td id="tbl-y-0">1</td>
+                                <td id="tbl-cin-0">0</td>
+                                <td id="tbl-p-0">0</td>
+                                <td id="tbl-g-0">1</td>
+                                <td id="tbl-sum-0" style="font-weight: 700; color: var(--active-high);">0</td>
+                                <td id="tbl-cout-0" style="font-weight: 700; color: var(--wire-carry);">1</td>
+                            </tr>
+                            <tr id="tbl-row-1">
+                                <td>FA1</td>
+                                <td id="tbl-a-1">0</td>
+                                <td id="tbl-y-1">1</td>
+                                <td id="tbl-cin-1">1</td>
+                                <td id="tbl-p-1">1</td>
+                                <td id="tbl-g-1">0</td>
+                                <td id="tbl-sum-1" style="font-weight: 700; color: var(--active-high);">0</td>
+                                <td id="tbl-cout-1" style="font-weight: 700; color: var(--wire-carry);">1</td>
+                            </tr>
+                            <tr id="tbl-row-2">
+                                <td>FA2</td>
+                                <td id="tbl-a-2">1</td>
+                                <td id="tbl-y-2">0</td>
+                                <td id="tbl-cin-2">1</td>
+                                <td id="tbl-p-2">1</td>
+                                <td id="tbl-g-2">0</td>
+                                <td id="tbl-sum-2" style="font-weight: 700; color: var(--active-high);">0</td>
+                                <td id="tbl-cout-2" style="font-weight: 700; color: var(--wire-carry);">1</td>
+                            </tr>
+                            <tr id="tbl-row-3">
+                                <td>FA3 (MSB)</td>
+                                <td id="tbl-a-3">0</td>
+                                <td id="tbl-y-3">0</td>
+                                <td id="tbl-cin-3">1</td>
+                                <td id="tbl-p-3">0</td>
+                                <td id="tbl-g-3">0</td>
+                                <td id="tbl-sum-3" style="font-weight: 700; color: var(--active-high);">1</td>
+                                <td id="tbl-cout-3" style="font-weight: 700; color: var(--wire-carry);">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Narrative Box -->
+                <div class="narrative-box">
+                    <div class="narrative-formula" id="narrative-formula">
+                        Total = A + Y + Cin = 5 + 3 + 0 = 8 | S[3:0] = 8 (Cout = 0)
+                    </div>
+                    <div class="narrative-text" id="narrative-text">
+                        Loading circuit calculations...
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ======================================================================
+             ACADEMIC REFERENCE: VERIFICATION & CODE
+             ====================================================================== -->
+        <div class="reference-accordion">
+            <div class="accordion-header">
+                <span>Verification Suite (1,024 Automated Test Cases)</span>
+                <span id="test-grand-status-badge" style="font-family: var(--font-mono); font-weight: 700;">
+                    100% PASSED (1,024 / 1,024 TESTS)
+                </span>
+            </div>
+            <div class="accordion-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.78rem; color: var(--text-secondary);">
+                        Exhaustive verification across all 16 values of A &times; 16 values of B for Addition, Subtraction, Increment, and Decrement.
+                    </span>
+                    <button class="btn btn-sm" onclick="App.runAutomatedTests(true)">Re-Run All 1,024 Tests</button>
+                </div>
+                <div id="test-operations-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.5rem;"></div>
+            </div>
+        </div>
+
+        <!-- Python Architecture Viewer -->
+        <div class="reference-accordion">
+            <div class="accordion-header">
+                <span>Modular Python Implementation Architecture</span>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary);">
+                    Repository Reference Code
+                </span>
+            </div>
+            <div class="accordion-body">
+                <div class="code-viewer-grid">
+                    <div class="code-nav">
+                        <button class="code-btn active" data-file="arithmetic_circuit.py" onclick="App.renderFilePreview('arithmetic_circuit.py')">
+                            arithmetic_circuit.py
+                        </button>
+                        <button class="code-btn" data-file="full_adder.py" onclick="App.renderFilePreview('full_adder.py')">
+                            full_adder.py
+                        </button>
+                        <button class="code-btn" data-file="multiplexer.py" onclick="App.renderFilePreview('multiplexer.py')">
+                            multiplexer.py
+                        </button>
+                        <button class="code-btn" data-file="main.py" onclick="App.renderFilePreview('main.py')">
+                            main.py
+                        </button>
+                        <button class="code-btn" data-file="test_circuit.py" onclick="App.renderFilePreview('test_circuit.py')">
+                            test_circuit.py
+                        </button>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.4rem; overflow: hidden;">
+                        <div style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; color: var(--wire-a);" id="code-view-title"></div>
+                        <div style="font-size: 0.72rem; color: var(--text-secondary);" id="code-view-desc"></div>
+                        <pre class="code-pre" id="code-view-pre"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </main>
 
-    <!-- ==========================================================================
-         PRESENTATION MODE MODAL (PROJECTOR DECK FOR PROFESSOR)
-         ========================================================================== -->
-    <div class="presentation-modal" id="presentation-modal">
-        <div class="presentation-header">
-            <div class="presentation-title">
-                📽️ 4-Bit Arithmetic Circuit Simulator — Viva & Evaluation Deck
-            </div>
-            <div style="display: flex; gap: 0.75rem;">
-                <button class="btn btn-secondary" onclick="App.toggleProjectorMode()">
-                    💡 Toggle High Contrast
-                </button>
-                <button class="btn btn-secondary" onclick="App.closePresentationMode()">
-                    ✕ Exit Presentation
-                </button>
-            </div>
-        </div>
-
-        <div class="presentation-slide-deck" id="presentation-slide-deck">
-            <!-- Slide content populated by app.js -->
-        </div>
-
-        <div class="presentation-controls">
-            <button class="btn btn-secondary" onclick="App.prevSlide()">
-                ← Previous Slide (Left Arrow)
-            </button>
-            <span class="mono text-cyan" id="presentation-slide-counter">
-                Slide 1 of 8
-            </span>
-            <button class="btn btn-primary" onclick="App.nextSlide()">
-                Next Slide (Right Arrow / Space) →
-            </button>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="container footer-content">
-            <div>
-                <strong>4-Bit Arithmetic Circuit Simulator</strong> • Computer Organization & Architecture
-                <p style="margin-top: 0.25rem;">Built with standard HTML5, CSS3, ES6 JavaScript, and SVG vector graphics.</p>
-            </div>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-                <a href="#top-nav">Back to Top ↑</a>
-                <button class="btn btn-secondary" onclick="window.print()" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">
-                    🖨️ Print / Export Summary
-                </button>
-            </div>
-        </div>
-    </footer>
-
-    <!-- SCRIPTS -->
+    <!-- Scripts -->
     <script src="simulator.js"></script>
     <script src="circuit_diagrams.js"></script>
     <script src="app.js"></script>

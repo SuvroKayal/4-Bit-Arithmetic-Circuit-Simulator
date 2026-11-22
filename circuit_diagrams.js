@@ -1,640 +1,471 @@
 /**
- * 4-Bit Arithmetic Circuit Simulator - Interactive Circuit Diagrams (SVG)
- * Generates technically accurate IEEE-standard logic diagrams with dynamic signal state illumination.
+ * 4-BIT ARITHMETIC CIRCUIT LABORATORY
+ * Complete Gate-Level IEEE Logic Diagrams & Schematic Engine
+ * 
+ * Contains:
+ * - Two 4:1 Multiplexers (Operand Y MUX & Carry-In Cin MUX)
+ * - Four Full Adder Stages (FA0 LSB to FA3 MSB)
+ * - Every Full Adder constructed from 2 XOR, 2 AND, 1 OR gates (20 total gates)
+ * - Real-time signal calculation, active wire highlighting, and step animation
  */
 
 const CircuitDiagrams = {
-    // Generate Half Adder SVG
-    renderHalfAdder(containerId, state = { a: 1, b: 0 }) {
-        const a = state.a & 1;
-        const b = state.b & 1;
-        const sum = a ^ b;
-        const carry = a & b;
+    toBinary4(num) {
+        return (num & 15).toString(2).padStart(4, "0");
+    },
 
-        const valClass = (v) => (v ? "wire-high" : "wire-low");
-        const valText = (v) => (v ? "1" : "0");
+    valText(val) {
+        return (val & 1) ? "1" : "0";
+    },
+
+    wireColorClass(val, baseType = "wire") {
+        const isHigh = (val & 1) === 1;
+        if (baseType === "ctrl") return "wire-ctrl";
+        if (baseType === "carry") return isHigh ? "wire-carry wire-high" : "wire-carry wire-low";
+        if (baseType === "a") return isHigh ? "wire-a wire-high" : "wire-a wire-low";
+        if (baseType === "y") return isHigh ? "wire-y wire-high" : "wire-y wire-low";
+        return isHigh ? "wire-high" : "wire-low";
+    },
+
+    valColorClass(val, isCarry = false) {
+        const isHigh = (val & 1) === 1;
+        if (isCarry) return isHigh ? "val-carry" : "val-low";
+        return isHigh ? "val-high" : "val-low";
+    },
+
+    /**
+     * Renders the complete Gate-Level Schematic of the 4-Bit Arithmetic Circuit
+     * 
+     * @param {string} containerId - Target DOM container ID
+     * @param {object} sim - Simulation output from CircuitSimulator.performOperation
+     * @param {number} animStep - 0 = Steady state, 1 = MUX, 2 = FA0, 3 = FA1, 4 = FA2, 5 = FA3, 6 = Output
+     */
+    renderGateLevelCircuit(containerId, sim, animStep = 0) {
+        const { a, b, s1, s0, y, cin, result, carryOut, stages, operation } = sim;
+
+        const isSteady = (animStep === 0 || animStep >= 6);
+        const muxReady = animStep >= 1 || isSteady;
+        const fa0Ready = animStep >= 2 || isSteady;
+        const fa1Ready = animStep >= 3 || isSteady;
+        const fa2Ready = animStep >= 4 || isSteady;
+        const fa3Ready = animStep >= 5 || isSteady;
+        const outReady = animStep >= 6 || isSteady;
+
+        // Selection channel: 00 -> 0, 01 -> 1, 10 -> 2, 11 -> 3
+        const muxChannel = (s1 << 1) | s0;
+
+        // Coordinates for the 4 Full Adder stages (FA0 LSB to FA3 MSB)
+        // Arranged horizontally from left to right
+        const faX = [70, 380, 690, 1000]; // Stage width is 280, gap is 30
+        const stageReady = [fa0Ready, fa1Ready, fa2Ready, fa3Ready];
 
         const svg = `
-        <svg viewBox="0 0 680 340" width="100%" class="circuit-svg" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 1380 770" class="main-circuit-svg" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="3" result="blur" />
-                    <feMerge>
-                        <feMergeNode in="blur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                </filter>
+                <marker id="arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M 0 1 L 7 4 L 0 7 z" fill="#475569"/>
+                </marker>
+                <marker id="arrow-high" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M 0 1 L 7 4 L 0 7 z" fill="#16865B"/>
+                </marker>
+                <marker id="arrow-carry" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M 0 1 L 7 4 L 0 7 z" fill="#DC5555"/>
+                </marker>
             </defs>
 
-            <!-- Background Grid -->
-            <g class="circuit-grid" opacity="0.15">
-                ${Array.from({length: 17}, (_, i) => `<line x1="${i*40}" y1="0" x2="${i*40}" y2="340" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-                ${Array.from({length: 9}, (_, i) => `<line x1="0" y1="${i*40}" x2="680" y2="${i*40}" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
+            <!-- Grid pattern background (subtle) -->
+            <g opacity="0.04">
+                ${Array.from({length: 46}, (_, i) => `<line x1="${i*30}" y1="0" x2="${i*30}" y2="770" stroke="#1E293B" stroke-width="0.5"/>`).join('')}
+                ${Array.from({length: 26}, (_, i) => `<line x1="0" y1="${i*30}" x2="1380" y2="${i*30}" stroke="#1E293B" stroke-width="0.5"/>`).join('')}
             </g>
 
-            <!-- Title & Labels -->
-            <text x="340" y="32" class="circuit-title-text" text-anchor="middle">1-BIT HALF ADDER (HA)</text>
-            <text x="340" y="52" class="circuit-sub-text" text-anchor="middle">Sum = A ⊕ B  |  Carry = A · B</text>
-
-            <!-- Input A Line -->
-            <path d="M 80,100 L 220,100" class="wire ${valClass(a)}" id="ha-wire-a"/>
-            <!-- Branch A down to AND gate -->
-            <path d="M 160,100 L 160,220 L 220,220" class="wire ${valClass(a)}" id="ha-wire-a-branch"/>
-            <circle cx="160" cy="100" r="4.5" class="junction-dot ${valClass(a)}"/>
-
-            <!-- Input B Line -->
-            <path d="M 80,140 L 220,140" class="wire ${valClass(b)}" id="ha-wire-b"/>
-            <!-- Branch B down to AND gate -->
-            <path d="M 130,140 L 130,260 L 220,260" class="wire ${valClass(b)}" id="ha-wire-b-branch"/>
-            <circle cx="130" cy="140" r="4.5" class="junction-dot ${valClass(b)}"/>
-
-            <!-- Input Terminals & Interactive Badges -->
-            <g class="circuit-pin interactive-pin" onclick="App.toggleHalfAdderBit('a')">
-                <rect x="25" y="82" width="55" height="36" rx="6" class="pin-box"/>
-                <text x="52" y="105" class="pin-label">A = <tspan class="pin-val ${valClass(a)}">${valText(a)}</tspan></text>
+            <!-- ==========================================================
+                 TOP HEADER & CONTROL LINES DISTRIBUTION (S1, S0)
+                 ========================================================== -->
+            <g transform="translate(30, 20)">
+                <rect x="0" y="0" width="160" height="60" rx="3" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2"/>
+                <text x="80" y="18" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700" fill="#26845B" text-anchor="middle">CONTROL BUS (S1, S0)</text>
+                <text x="30" y="38" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#26845B">S1 = ${s1}</text>
+                <text x="30" y="52" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#26845B">S0 = ${s0}</text>
+                <text x="110" y="45" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700" fill="#1E293B">${operation.toUpperCase()}</text>
             </g>
 
-            <g class="circuit-pin interactive-pin" onclick="App.toggleHalfAdderBit('b')">
-                <rect x="25" y="122" width="55" height="36" rx="6" class="pin-box"/>
-                <text x="52" y="145" class="pin-label">B = <tspan class="pin-val ${valClass(b)}">${valText(b)}</tspan></text>
-            </g>
+            <!-- S1 and S0 Distribution Lines across top -->
+            <!-- S1 Line (Green) -->
+            <path d="M 190, 35 L 1260, 35" class="wire wire-ctrl"/>
+            <text x="195" y="30" class="signal-tag" fill="#26845B">S1</text>
 
-            <!-- XOR Gate (Sum = A XOR B) -->
-            <g class="gate-group" transform="translate(220, 80)">
-                <!-- XOR input arc -->
-                <path d="M 0,20 Q 20,40 0,60" fill="none" class="gate-body-outline" stroke-width="2.5"/>
-                <!-- XOR main body -->
-                <path d="M 12,20 Q 32,40 12,60 Q 55,58 90,40 Q 55,22 12,20 Z" class="gate-body"/>
-                <text x="40" y="44" class="gate-label">XOR</text>
-            </g>
-            <!-- XOR Output wire to Sum -->
-            <path d="M 310,120 L 530,120" class="wire ${valClass(sum)}" id="ha-wire-sum"/>
+            <!-- S0 Line (Green) -->
+            <path d="M 190, 50 L 1280, 50" class="wire wire-ctrl"/>
+            <text x="195" y="47" class="signal-tag" fill="#26845B">S0</text>
 
-            <!-- AND Gate (Carry = A AND B) -->
-            <g class="gate-group" transform="translate(220, 200)">
-                <!-- AND main body -->
-                <path d="M 10,20 L 50,20 Q 90,20 90,40 Q 90,60 50,60 L 10,60 Z" class="gate-body"/>
-                <text x="44" y="44" class="gate-label">AND</text>
-            </g>
-            <!-- AND Output wire to Carry -->
-            <path d="M 310,240 L 530,240" class="wire ${valClass(carry)}" id="ha-wire-carry"/>
 
-            <!-- Output Terminals -->
-            <g class="circuit-pin">
-                <rect x="530" y="102" width="120" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="590" y="125" class="pin-label">SUM = <tspan class="pin-val ${valClass(sum)}">${valText(sum)}</tspan></text>
-            </g>
+            <!-- ==========================================================
+                 UPPER-MIDDLE: 4:1 MULTIPLEXER FOR SECOND OPERAND Y
+                 ========================================================== -->
+            <g transform="translate(230, 95)">
+                <!-- MUX Sub-panel outline -->
+                <rect x="0" y="0" width="460" height="175" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+                <text x="230" y="20" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#7C3AED" text-anchor="middle">
+                    SECOND OPERAND MULTIPLEXER (4:1 MUX FOR Y)
+                </text>
 
-            <g class="circuit-pin">
-                <rect x="530" y="222" width="120" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="590" y="245" class="pin-label">CARRY = <tspan class="pin-val ${valClass(carry)}">${valText(carry)}</tspan></text>
-            </g>
+                <!-- Tap S1 and S0 into Y MUX -->
+                <path d="M 150, -60 L 150, 35" class="wire wire-ctrl"/>
+                <circle cx="380" cy="35" r="3" fill="#26845B"/>
+                <path d="M 170, -45 L 170, 35" class="wire wire-ctrl"/>
+                <circle cx="400" cy="50" r="3" fill="#26845B"/>
+                <text x="145" y="32" class="signal-tag" fill="#26845B">S1</text>
+                <text x="175" y="32" class="signal-tag" fill="#26845B">S0</text>
 
-            <!-- Annotations -->
-            <text x="420" y="112" class="wire-annotation ${valClass(sum)}">S = A ⊕ B (${valText(sum)})</text>
-            <text x="420" y="232" class="wire-annotation ${valClass(carry)}">C = A · B (${valText(carry)})</text>
-        </svg>`;
-
-        const container = document.getElementById(containerId);
-        if (container) container.innerHTML = svg;
-    },
-
-    // Generate Full Adder SVG (composed of 2 Half Adders + OR gate)
-    renderFullAdder(containerId, state = { a: 1, b: 1, cin: 0 }) {
-        const a = state.a & 1;
-        const b = state.b & 1;
-        const cin = state.cin & 1;
-
-        const res = CircuitSimulator.fullAdder(a, b, cin);
-        const { a_xor_b, a_and_b, cin_and_prop } = res.intermediate;
-        const sum = res.sum;
-        const cout = res.cout;
-
-        const valClass = (v) => (v ? "wire-high" : "wire-low");
-        const valText = (v) => (v ? "1" : "0");
-
-        const svg = `
-        <svg viewBox="0 0 880 440" width="100%" class="circuit-svg" xmlns="http://www.w3.org/2000/svg">
-            <!-- Background Grid -->
-            <g class="circuit-grid" opacity="0.15">
-                ${Array.from({length: 22}, (_, i) => `<line x1="${i*40}" y1="0" x2="${i*40}" y2="440" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-                ${Array.from({length: 11}, (_, i) => `<line x1="0" y1="${i*40}" x2="880" y2="${i*40}" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-            </g>
-
-            <!-- Title & Labels -->
-            <text x="440" y="28" class="circuit-title-text" text-anchor="middle">1-BIT FULL ADDER (2 HAs + OR GATE)</text>
-            <text x="440" y="48" class="circuit-sub-text" text-anchor="middle">Sum = A ⊕ B ⊕ Cin  |  Cout = (A · B) + (Cin · (A ⊕ B))</text>
-
-            <!-- Subcircuit Group 1: Half Adder 1 Box -->
-            <rect x="180" y="65" width="220" height="235" rx="10" class="subcircuit-box" stroke-dasharray="6,4"/>
-            <text x="290" y="85" class="subcircuit-title" text-anchor="middle">STAGE 1: HALF ADDER 1</text>
-
-            <!-- Subcircuit Group 2: Half Adder 2 Box -->
-            <rect x="440" y="65" width="220" height="235" rx="10" class="subcircuit-box" stroke-dasharray="6,4"/>
-            <text x="550" y="85" class="subcircuit-title" text-anchor="middle">STAGE 2: HALF ADDER 2</text>
-
-            <!-- Input A Line -->
-            <path d="M 60,110 L 220,110" class="wire ${valClass(a)}"/>
-            <path d="M 130,110 L 130,220 L 220,220" class="wire ${valClass(a)}"/>
-            <circle cx="130" cy="110" r="4.5" class="junction-dot ${valClass(a)}"/>
-
-            <!-- Input B Line -->
-            <path d="M 60,150 L 220,150" class="wire ${valClass(b)}"/>
-            <path d="M 110,150 L 110,260 L 220,260" class="wire ${valClass(b)}"/>
-            <circle cx="110" cy="150" r="4.5" class="junction-dot ${valClass(b)}"/>
-
-            <!-- Input Cin Line -->
-            <path d="M 60,370 L 410,370 L 410,150 L 480,150" class="wire ${valClass(cin)}"/>
-            <!-- Branch Cin to AND2 -->
-            <path d="M 410,260 L 480,260" class="wire ${valClass(cin)}"/>
-            <circle cx="410" cy="260" r="4.5" class="junction-dot ${valClass(cin)}"/>
-
-            <!-- Input Pins -->
-            <g class="circuit-pin interactive-pin" onclick="App.toggleFullAdderBit('a')">
-                <rect x="15" y="92" width="55" height="36" rx="6" class="pin-box"/>
-                <text x="42" y="115" class="pin-label">A = <tspan class="pin-val ${valClass(a)}">${valText(a)}</tspan></text>
-            </g>
-
-            <g class="circuit-pin interactive-pin" onclick="App.toggleFullAdderBit('b')">
-                <rect x="15" y="132" width="55" height="36" rx="6" class="pin-box"/>
-                <text x="42" y="155" class="pin-label">B = <tspan class="pin-val ${valClass(b)}">${valText(b)}</tspan></text>
-            </g>
-
-            <g class="circuit-pin interactive-pin" onclick="App.toggleFullAdderBit('cin')">
-                <rect x="15" y="352" width="70" height="36" rx="6" class="pin-box"/>
-                <text x="50" y="375" class="pin-label">Cin = <tspan class="pin-val ${valClass(cin)}">${valText(cin)}</tspan></text>
-            </g>
-
-            <!-- XOR 1 (HA1) -->
-            <g class="gate-group" transform="translate(220, 90)">
-                <path d="M 0,20 Q 20,40 0,60" fill="none" class="gate-body-outline" stroke-width="2.5"/>
-                <path d="M 12,20 Q 32,40 12,60 Q 55,58 90,40 Q 55,22 12,20 Z" class="gate-body"/>
-                <text x="40" y="44" class="gate-label">XOR 1</text>
-            </g>
-
-            <!-- AND 1 (HA1) -->
-            <g class="gate-group" transform="translate(220, 200)">
-                <path d="M 10,20 L 50,20 Q 90,20 90,40 Q 90,60 50,60 L 10,60 Z" class="gate-body"/>
-                <text x="44" y="44" class="gate-label">AND 1</text>
-            </g>
-
-            <!-- Intermediate wire S1 = A XOR B to HA2 XOR2 and AND2 -->
-            <path d="M 310,130 L 440,130 L 440,110 L 480,110" class="wire ${valClass(a_xor_b)}"/>
-            <path d="M 440,130 L 440,220 L 480,220" class="wire ${valClass(a_xor_b)}"/>
-            <circle cx="440" cy="130" r="4.5" class="junction-dot ${valClass(a_xor_b)}"/>
-            <text x="360" y="122" class="wire-annotation ${valClass(a_xor_b)}">S1 = A ⊕ B (${valText(a_xor_b)})</text>
-
-            <!-- Intermediate wire C1 = A AND B down to OR gate -->
-            <path d="M 310,240 L 370,240 L 370,330 L 710,330" class="wire ${valClass(a_and_b)}"/>
-            <text x="375" y="275" class="wire-annotation ${valClass(a_and_b)}">C1 = A · B (${valText(a_and_b)})</text>
-
-            <!-- XOR 2 (HA2) -->
-            <g class="gate-group" transform="translate(480, 90)">
-                <path d="M 0,20 Q 20,40 0,60" fill="none" class="gate-body-outline" stroke-width="2.5"/>
-                <path d="M 12,20 Q 32,40 12,60 Q 55,58 90,40 Q 55,22 12,20 Z" class="gate-body"/>
-                <text x="40" y="44" class="gate-label">XOR 2</text>
-            </g>
-
-            <!-- AND 2 (HA2) -->
-            <g class="gate-group" transform="translate(480, 200)">
-                <path d="M 10,20 L 50,20 Q 90,20 90,40 Q 90,60 50,60 L 10,60 Z" class="gate-body"/>
-                <text x="44" y="44" class="gate-label">AND 2</text>
-            </g>
-
-            <!-- Final SUM wire from XOR 2 -->
-            <path d="M 570,130 L 730,130" class="wire ${valClass(sum)}"/>
-            <g class="circuit-pin">
-                <rect x="730" y="112" width="125" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="792" y="135" class="pin-label">SUM = <tspan class="pin-val ${valClass(sum)}">${valText(sum)}</tspan></text>
-            </g>
-
-            <!-- Intermediate wire C2 = Cin AND S1 to OR gate -->
-            <path d="M 570,240 L 640,240 L 640,370 L 710,370" class="wire ${valClass(cin_and_prop)}"/>
-            <text x="585" y="232" class="wire-annotation ${valClass(cin_and_prop)}">C2 = Cin · S1 (${valText(cin_and_prop)})</text>
-
-            <!-- OR Gate (Combines C1 + C2) -->
-            <g class="gate-group" transform="translate(710, 310)">
-                <path d="M 0,20 Q 20,40 0,60 Q 45,58 75,40 Q 45,22 0,20 Z" class="gate-body"/>
-                <text x="32" y="44" class="gate-label">OR</text>
-            </g>
-
-            <!-- Carry-Out Wire from OR Gate -->
-            <path d="M 785,350 L 825,350 L 825,350" class="wire ${valClass(cout)}"/>
-            <g class="circuit-pin">
-                <rect x="730" y="390" width="125" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="792" y="413" class="pin-label">Cout = <tspan class="pin-val ${valClass(cout)}">${valText(cout)}</tspan></text>
-            </g>
-            <path d="M 785,350 L 792,350 L 792,390" class="wire ${valClass(cout)}"/>
-        </svg>`;
-
-        const container = document.getElementById(containerId);
-        if (container) container.innerHTML = svg;
-    },
-
-    // Generate 4-Bit Ripple Carry Adder SVG
-    render4BitAdder(containerId, state = { a: 5, b: 3, cin: 0 }) {
-        const a = state.a & 15;
-        const b = state.b & 15;
-        const cin = state.cin & 1;
-
-        const res = CircuitSimulator.fourBitAdder(a, b, cin);
-        const stages = res.stages;
-        const valClass = (v) => (v ? "wire-high" : "wire-low");
-        const valText = (v) => (v ? "1" : "0");
-
-        // 4 Full Adders arranged horizontally from FA3 (MSB) down to FA0 (LSB) or FA0 to FA3
-        // In standard digital design: LSB (FA0) is on the right, MSB (FA3) on the left
-        const stageX = [700, 500, 300, 100]; // FA0, FA1, FA2, FA3
-
-        const svg = `
-        <svg viewBox="0 0 960 480" width="100%" class="circuit-svg" xmlns="http://www.w3.org/2000/svg">
-            <g class="circuit-grid" opacity="0.12">
-                ${Array.from({length: 24}, (_, i) => `<line x1="${i*40}" y1="0" x2="${i*40}" y2="480" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-                ${Array.from({length: 12}, (_, i) => `<line x1="0" y1="${i*40}" x2="960" y2="${i*40}" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-            </g>
-
-            <text x="480" y="32" class="circuit-title-text" text-anchor="middle">4-BIT RIPPLE CARRY ADDER (CASCADED FULL ADDERS)</text>
-            <text x="480" y="52" class="circuit-sub-text" text-anchor="middle">Carry ripples from Stage 0 (LSB) through to Stage 3 (MSB)</text>
-
-            <!-- Carry-In to FA0 -->
-            <path d="M 890,240 L 800,240" class="wire ${valClass(cin)} ${cin ? 'wire-pulse' : ''}"/>
-            <g class="circuit-pin interactive-pin" onclick="App.toggleRippleCin()">
-                <rect x="850" y="222" width="65" height="36" rx="6" class="pin-box"/>
-                <text x="882" y="245" class="pin-label">Cin = <tspan class="pin-val ${valClass(cin)}">${valText(cin)}</tspan></text>
-            </g>
-
-            <!-- Ripple Carry Lines between stages -->
-            <!-- C1 from FA0 to FA1 -->
-            <path d="M 700,240 L 600,240" class="wire ${valClass(stages[0].cout)} ${stages[0].cout ? 'wire-pulse' : ''}"/>
-            <text x="650" y="230" class="wire-annotation ${valClass(stages[0].cout)}" text-anchor="middle">C1 = ${valText(stages[0].cout)}</text>
-
-            <!-- C2 from FA1 to FA2 -->
-            <path d="M 500,240 L 400,240" class="wire ${valClass(stages[1].cout)} ${stages[1].cout ? 'wire-pulse' : ''}"/>
-            <text x="450" y="230" class="wire-annotation ${valClass(stages[1].cout)}" text-anchor="middle">C2 = ${valText(stages[1].cout)}</text>
-
-            <!-- C3 from FA2 to FA3 -->
-            <path d="M 300,240 L 200,240" class="wire ${valClass(stages[2].cout)} ${stages[2].cout ? 'wire-pulse' : ''}"/>
-            <text x="250" y="230" class="wire-annotation ${valClass(stages[2].cout)}" text-anchor="middle">C3 = ${valText(stages[2].cout)}</text>
-
-            <!-- Cout from FA3 -->
-            <path d="M 100,240 L 20,240" class="wire ${valClass(stages[3].cout)} ${stages[3].cout ? 'wire-pulse' : ''}"/>
-            <g class="circuit-pin">
-                <rect x="10" y="222" width="75" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="47" y="245" class="pin-label">Cout = <tspan class="pin-val ${valClass(stages[3].cout)}">${valText(stages[3].cout)}</tspan></text>
-            </g>
-
-            <!-- Render the 4 Full Adder Stages -->
-            ${stages.map((stg) => {
-                const x = stageX[stg.stage];
-                const i = stg.stage;
-                const isMSB = i === 3;
-                const isLSB = i === 0;
-
-                return `
-                <!-- FA Stage ${i} Box -->
-                <g class="fa-stage-group" transform="translate(${x}, 160)">
-                    <rect x="0" y="0" width="100" height="150" rx="8" class="fa-block"/>
-                    <text x="50" y="32" class="fa-title" text-anchor="middle">FA ${i}</text>
-                    <text x="50" y="50" class="fa-sub" text-anchor="middle">${isLSB ? '(LSB)' : isMSB ? '(MSB)' : 'Bit ' + i}</text>
-
-                    <!-- Internal pins labels -->
-                    <text x="50" y="75" class="fa-pin-name" text-anchor="middle">Cin → Cout</text>
-                    <text x="50" y="130" class="fa-pin-name" text-anchor="middle">Sum: ${valText(stg.sum)}</text>
+                <!-- Input Path D0: B (4 bits) -->
+                <g transform="translate(20, 35)">
+                    <rect x="0" y="0" width="75" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 0 ? '#7C3AED' : '#CBD5E1'}" stroke-width="${muxChannel === 0 ? '1.8' : '1'}"/>
+                    <text x="37" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">
+                        D0: B (${this.toBinary4(b)})
+                    </text>
+                    <path d="M 75, 12 L 190, 12 L 230, 75" class="wire ${muxChannel === 0 ? 'wire-y wire-high' : 'wire-low'}"/>
                 </g>
 
-                <!-- Input Ai line (from top) -->
-                <path d="M ${x + 30},80 L ${x + 30},160" class="wire ${valClass(stg.bitA)}"/>
-                <g class="circuit-pin interactive-pin" onclick="App.toggleRippleBit('a', ${i})">
-                    <rect x="${x + 8}" y="65" width="44" height="28" rx="4" class="pin-box mini-pin"/>
-                    <text x="${x + 30}" y="84" class="pin-label mini-label">A${i}:${valText(stg.bitA)}</text>
+                <!-- Input Path D1: NOT B (B̅, 4 bits via inverters) -->
+                <g transform="translate(20, 68)">
+                    <rect x="0" y="0" width="75" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 1 ? '#7C3AED' : '#CBD5E1'}" stroke-width="${muxChannel === 1 ? '1.8' : '1'}"/>
+                    <text x="37" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">
+                        D1: B̅ (${this.toBinary4(b ^ 15)})
+                    </text>
+                    <!-- Inverter Symbol -->
+                    <polygon points="100,74 116,80 100,86" class="gate-body"/>
+                    <circle cx="119" cy="80" r="2.5" fill="#FFFFFF" stroke="#475569" stroke-width="1.2"/>
+                    <path d="M 75, 12 L 100, 12" class="wire"/>
+                    <path d="M 122, 12 L 190, 12 L 230, 80" class="wire ${muxChannel === 1 ? 'wire-y wire-high' : 'wire-low'}"/>
                 </g>
 
-                <!-- Input Bi line (from top) -->
-                <path d="M ${x + 70},80 L ${x + 70},160" class="wire ${valClass(stg.bitY)}"/>
-                <g class="circuit-pin interactive-pin" onclick="App.toggleRippleBit('b', ${i})">
-                    <rect x="${x + 48}" y="65" width="44" height="28" rx="4" class="pin-box mini-pin"/>
-                    <text x="${x + 70}" y="84" class="pin-label mini-label">B${i}:${valText(stg.bitY)}</text>
+                <!-- Input Path D2: 0000 (GND) -->
+                <g transform="translate(20, 101)">
+                    <rect x="0" y="0" width="75" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 2 ? '#7C3AED' : '#CBD5E1'}" stroke-width="${muxChannel === 2 ? '1.8' : '1'}"/>
+                    <text x="37" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">
+                        D2: 0000 (0)
+                    </text>
+                    <path d="M 75, 12 L 190, 12 L 230, 85" class="wire ${muxChannel === 2 ? 'wire-y wire-high' : 'wire-low'}"/>
                 </g>
 
-                <!-- Sum Si line (to bottom) -->
-                <path d="M ${x + 50},310 L ${x + 50},380" class="wire ${valClass(stg.sum)}"/>
-                <g class="circuit-pin">
-                    <rect x="${x + 22}" y="380" width="56" height="32" rx="4" class="pin-box output-pin mini-pin"/>
-                    <text x="${x + 50}" y="401" class="pin-label mini-label">S${i} = ${valText(stg.sum)}</text>
+                <!-- Input Path D3: 1111 (VCC / Logic -1) -->
+                <g transform="translate(20, 134)">
+                    <rect x="0" y="0" width="75" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 3 ? '#7C3AED' : '#CBD5E1'}" stroke-width="${muxChannel === 3 ? '1.8' : '1'}"/>
+                    <text x="37" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">
+                        D3: 1111 (15)
+                    </text>
+                    <path d="M 75, 12 L 190, 12 L 230, 90" class="wire ${muxChannel === 3 ? 'wire-y wire-high' : 'wire-low'}"/>
                 </g>
-                `;
-            }).join('')}
 
-            <!-- 4-Bit Sum Bus Display at the bottom -->
-            <rect x="220" y="430" width="520" height="40" rx="8" class="bus-container"/>
-            <text x="480" y="455" class="bus-text" text-anchor="middle">
-                4-BIT RESULT: S3 S2 S1 S0 = <tspan class="pin-val">${CircuitSimulator.toBinary4(res.result)}</tspan> (${res.result})  |  Cout = <tspan class="pin-val">${valText(res.carryOut)}</tspan>
-            </text>
-        </svg>`;
+                <!-- Trapezoid MUX Symbol -->
+                <g transform="translate(230, 45)">
+                    <polygon points="0,15 65,30 65,85 0,100" fill="#FFFFFF" stroke="#475569" stroke-width="1.8"/>
+                    <text x="28" y="58" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700" fill="#1E293B" text-anchor="middle">
+                        4:1 MUX
+                    </text>
+                    <text x="28" y="70" font-family="'JetBrains Mono', monospace" font-size="8" fill="#64748B" text-anchor="middle">
+                        [4-Bit]
+                    </text>
+                </g>
 
-        const container = document.getElementById(containerId);
-        if (container) container.innerHTML = svg;
-    },
-
-    // Generate Multiplexer Selection & Carry Generation SVG
-    renderMultiplexerStage(containerId, state = { s1: 0, s0: 1, b: 3 }) {
-        const s1 = state.s1 & 1;
-        const s0 = state.s0 & 1;
-        const b = state.b & 15;
-        const mux = CircuitSimulator.selectInputs(0, b, s1, s0);
-
-        const valClass = (v) => (v ? "wire-high" : "wire-low");
-        const valText = (v) => (v ? "1" : "0");
-
-        const svg = `
-        <svg viewBox="0 0 880 400" width="100%" class="circuit-svg" xmlns="http://www.w3.org/2000/svg">
-            <g class="circuit-grid" opacity="0.12">
-                ${Array.from({length: 22}, (_, i) => `<line x1="${i*40}" y1="0" x2="${i*40}" y2="400" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-                ${Array.from({length: 10}, (_, i) => `<line x1="0" y1="${i*40}" x2="880" y2="${i*40}" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
+                <!-- MUX Output Y Bus -->
+                <path d="M 295, 102 L 340, 102" class="wire wire-y wire-high" stroke-width="2.6" marker-end="url(#arrow)"/>
+                <g transform="translate(340, 85)">
+                    <rect x="0" y="0" width="105" height="34" rx="3" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.5"/>
+                    <text x="52" y="16" font-family="'JetBrains Mono', monospace" font-size="9" fill="#7C3AED" text-anchor="middle">OUTPUT Y[3:0]</text>
+                    <text x="52" y="28" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#1E293B" text-anchor="middle">
+                        Y = ${muxReady ? this.toBinary4(y) : '----'} (${muxReady ? y : '-'})
+                    </text>
+                </g>
             </g>
 
-            <text x="440" y="30" class="circuit-title-text" text-anchor="middle">MULTIPLEXER & OPERAND-Y SELECTOR STAGE</text>
-            <text x="440" y="50" class="circuit-sub-text" text-anchor="middle">Controls second operand Y and Carry-In according to S1 and S0</text>
 
-            <!-- Control Line S1 -->
-            <path d="M 80,80 L 380,80 L 380,140" class="wire ${valClass(s1)}"/>
-            <g class="circuit-pin interactive-pin" onclick="App.toggleMuxControl('s1')">
-                <rect x="25" y="65" width="55" height="30" rx="4" class="pin-box"/>
-                <text x="52" y="85" class="pin-label">S1: ${valText(s1)}</text>
+            <!-- ==========================================================
+                 UPPER-RIGHT: 4:1 MULTIPLEXER FOR CARRY-IN (Cin)
+                 ========================================================== -->
+            <g transform="translate(730, 95)">
+                <!-- Cin MUX Sub-panel outline -->
+                <rect x="0" y="0" width="460" height="175" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.2"/>
+                <text x="230" y="20" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#DC5555" text-anchor="middle">
+                    CARRY-IN MULTIPLEXER (4:1 MUX FOR Cin)
+                </text>
+
+                <!-- Tap S1 and S0 into Cin MUX -->
+                <path d="M 150, -60 L 150, 35" class="wire wire-ctrl"/>
+                <circle cx="880" cy="35" r="3" fill="#26845B"/>
+                <path d="M 170, -45 L 170, 35" class="wire wire-ctrl"/>
+                <circle cx="900" cy="50" r="3" fill="#26845B"/>
+                <text x="145" y="32" class="signal-tag" fill="#26845B">S1</text>
+                <text x="175" y="32" class="signal-tag" fill="#26845B">S0</text>
+
+                <!-- Cin Input Path D0: 0 (Addition) -->
+                <g transform="translate(25, 35)">
+                    <rect x="0" y="0" width="70" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 0 ? '#DC5555' : '#CBD5E1'}" stroke-width="${muxChannel === 0 ? '1.8' : '1'}"/>
+                    <text x="35" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">D0: 0 (Add)</text>
+                    <path d="M 70, 12 L 180, 12 L 230, 75" class="wire ${muxChannel === 0 ? 'wire-carry wire-high' : 'wire-low'}"/>
+                </g>
+
+                <!-- Cin Input Path D1: 1 (Subtraction) -->
+                <g transform="translate(25, 68)">
+                    <rect x="0" y="0" width="70" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 1 ? '#DC5555' : '#CBD5E1'}" stroke-width="${muxChannel === 1 ? '1.8' : '1'}"/>
+                    <text x="35" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">D1: 1 (Sub)</text>
+                    <path d="M 70, 12 L 180, 12 L 230, 80" class="wire ${muxChannel === 1 ? 'wire-carry wire-high' : 'wire-low'}"/>
+                </g>
+
+                <!-- Cin Input Path D2: 1 (Increment) -->
+                <g transform="translate(25, 101)">
+                    <rect x="0" y="0" width="70" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 2 ? '#DC5555' : '#CBD5E1'}" stroke-width="${muxChannel === 2 ? '1.8' : '1'}"/>
+                    <text x="35" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">D2: 1 (Inc)</text>
+                    <path d="M 70, 12 L 180, 12 L 230, 85" class="wire ${muxChannel === 2 ? 'wire-carry wire-high' : 'wire-low'}"/>
+                </g>
+
+                <!-- Cin Input Path D3: 0 (Decrement) -->
+                <g transform="translate(25, 134)">
+                    <rect x="0" y="0" width="70" height="24" rx="2" fill="#FFFFFF" stroke="${muxChannel === 3 ? '#DC5555' : '#CBD5E1'}" stroke-width="${muxChannel === 3 ? '1.8' : '1'}"/>
+                    <text x="35" y="16" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#1E293B" text-anchor="middle">D3: 0 (Dec)</text>
+                    <path d="M 70, 12 L 180, 12 L 230, 90" class="wire ${muxChannel === 3 ? 'wire-carry wire-high' : 'wire-low'}"/>
+                </g>
+
+                <!-- Trapezoid Cin MUX Symbol -->
+                <g transform="translate(230, 45)">
+                    <polygon points="0,15 65,30 65,85 0,100" fill="#FFFFFF" stroke="#475569" stroke-width="1.8"/>
+                    <text x="28" y="58" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700" fill="#1E293B" text-anchor="middle">
+                        4:1 MUX
+                    </text>
+                    <text x="28" y="70" font-family="'JetBrains Mono', monospace" font-size="8" fill="#64748B" text-anchor="middle">
+                        [Cin]
+                    </text>
+                </g>
+
+                <!-- Cin Output Line -->
+                <path d="M 295, 102 L 350, 102" class="wire wire-carry wire-high" stroke-width="2.2" marker-end="url(#arrow-carry)"/>
+                <g transform="translate(350, 85)">
+                    <rect x="0" y="0" width="95" height="34" rx="3" fill="#FFFFFF" stroke="#DC5555" stroke-width="1.5"/>
+                    <text x="47" y="16" font-family="'JetBrains Mono', monospace" font-size="9" fill="#DC5555" text-anchor="middle">SELECTED Cin</text>
+                    <text x="47" y="28" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="700" fill="#1E293B" text-anchor="middle">
+                        Cin = ${muxReady ? cin : '-'}
+                    </text>
+                </g>
             </g>
 
-            <!-- Control Line S0 -->
-            <path d="M 80,120 L 410,120 L 410,140" class="wire ${valClass(s0)}"/>
-            <g class="circuit-pin interactive-pin" onclick="App.toggleMuxControl('s0')">
-                <rect x="25" y="105" width="55" height="30" rx="4" class="pin-box"/>
-                <text x="52" y="125" class="pin-label">S0: ${valText(s0)}</text>
+
+            <!-- ==========================================================
+                 ROUTING CARRY-IN (Cin) WIRE FROM CIN MUX TO FA0 (LSB)
+                 ========================================================== -->
+            <!-- Wire drops from Cin MUX, travels left around FA0, and enters at y=510 -->
+            <path d="M 1175, 197 L 1220, 197 L 1220, 285 L 40, 285 L 40, 520 L 70, 520" 
+                  class="wire ${muxReady ? this.wireColorClass(cin, 'carry') : 'wire-low'}" 
+                  stroke-width="2" marker-end="url(#arrow-carry)"/>
+            <g transform="translate(15, 395)">
+                <rect x="0" y="0" width="50" height="22" rx="2" fill="#FFFFFF" stroke="#DC5555" stroke-width="1"/>
+                <text x="25" y="15" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#DC5555" text-anchor="middle">
+                    Cin = ${muxReady ? cin : '-'}
+                </text>
             </g>
 
-            <!-- 4-to-1 Multiplexer Trapezoid Box for Bit i -->
-            <polygon points="340,140 450,140 430,310 360,310" class="mux-polygon"/>
-            <text x="395" y="180" class="mux-label" text-anchor="middle">4:1 MUX</text>
-            <text x="395" y="200" class="mux-sub" text-anchor="middle">(Per Bit i)</text>
 
-            <!-- Data Inputs to MUX (D0=B, D1=B', D2=0, D3=1) -->
-            <!-- D0 = B -->
-            <path d="M 210,165 L 348,165" class="wire ${valClass(b & 1)}"/>
-            <text x="280" y="158" class="wire-annotation">D0 = Bi</text>
-
-            <!-- D1 = NOT B (B') -->
-            <path d="M 210,205 L 260,205" class="wire ${valClass(b & 1)}"/>
-            <!-- Small Inverter Bubble / NOT Gate -->
-            <polygon points="260,195 285,205 260,215" class="gate-body"/>
-            <circle cx="288" cy="205" r="3" fill="#0D1527" stroke="#38BDF8" stroke-width="1.5"/>
-            <path d="M 292,205 L 352,205" class="wire ${valClass(~b & 1)}"/>
-            <text x="320" y="198" class="wire-annotation">D1 = B̅i</text>
-
-            <!-- D2 = 0 (GND) -->
-            <path d="M 240,245 L 358,245" class="wire wire-low"/>
-            <text x="290" y="240" class="wire-annotation">D2 = 0</text>
-
-            <!-- D3 = 1 (VCC) -->
-            <path d="M 240,285 L 362,285" class="wire wire-high"/>
-            <text x="290" y="280" class="wire-annotation">D3 = 1</text>
-
-            <!-- MUX Output Yi -->
-            <path d="M 395,310 L 395,360 L 580,360" class="wire ${valClass(mux.y & 1)}"/>
-            <g class="circuit-pin">
-                <rect x="580" y="342" width="160" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="660" y="365" class="pin-label">Yi = ${valText(mux.y & 1)} (Y = ${CircuitSimulator.toBinary4(mux.y)})</text>
-            </g>
-
-            <!-- Carry-In Logic Box -->
-            <rect x="530" y="110" width="260" height="150" rx="8" class="fa-block"/>
-            <text x="660" y="135" class="fa-title" text-anchor="middle">CIN GENERATOR LOGIC</text>
-            <text x="660" y="155" class="fa-sub" text-anchor="middle">Cin = 1 for Subtraction & Increment</text>
-            <text x="660" y="180" class="mux-formula" text-anchor="middle">Cin = (S1' · S0) + (S1 · S0')</text>
-            <text x="660" y="200" class="mux-formula" text-anchor="middle">= S1 ⊕ S0</text>
-            <path d="M 660,215 L 660,260 L 760,260" class="wire ${valClass(mux.cin)}"/>
-            <g class="circuit-pin">
-                <rect x="730" y="242" width="110" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="785" y="265" class="pin-label">Cin = <tspan class="pin-val ${valClass(mux.cin)}">${valText(mux.cin)}</tspan></text>
-            </g>
-
-            <!-- Operation badge -->
-            <rect x="80" y="340" width="220" height="40" rx="6" class="bus-container"/>
-            <text x="190" y="365" class="bus-text" text-anchor="middle">
-                OP: <tspan class="pin-val">${mux.operation.toUpperCase()}</tspan> (${mux.formula})
-            </text>
-        </svg>`;
-
-        const container = document.getElementById(containerId);
-        if (container) container.innerHTML = svg;
-    },
-
-    // Generate Master 4-Bit Arithmetic Circuit SVG (Complete Project Circuit)
-    renderMasterCircuit(containerId, state = { a: 5, b: 3, s1: 0, s0: 0 }) {
-        const a = state.a & 15;
-        const b = state.b & 15;
-        const s1 = state.s1 & 1;
-        const s0 = state.s0 & 1;
-
-        const sim = CircuitSimulator.performOperation(a, b, s1, s0);
-        const stages = sim.stages;
-        const valClass = (v) => (v ? "wire-high" : "wire-low");
-        const valText = (v) => (v ? "1" : "0");
-
-        const svg = `
-        <svg viewBox="0 0 1020 620" width="100%" class="circuit-svg" xmlns="http://www.w3.org/2000/svg">
-            <g class="circuit-grid" opacity="0.10">
-                ${Array.from({length: 26}, (_, i) => `<line x1="${i*40}" y1="0" x2="${i*40}" y2="620" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-                ${Array.from({length: 16}, (_, i) => `<line x1="0" y1="${i*40}" x2="1020" y2="${i*40}" stroke="#38BDF8" stroke-width="0.5"/>`).join('')}
-            </g>
-
-            <!-- Header -->
-            <text x="510" y="30" class="circuit-title-text" text-anchor="middle">COMPLETE 4-BIT ARITHMETIC CIRCUIT</text>
-            <text x="510" y="50" class="circuit-sub-text" text-anchor="middle">Common 4-Bit Ripple Carry Adder Architecture with Multiplexed Input Y & Cin</text>
-
-            <!-- Control Bus at Top Left -->
-            <g transform="translate(60, 60)">
-                <rect x="0" y="0" width="220" height="90" rx="6" class="subcircuit-box"/>
-                <text x="110" y="24" class="subcircuit-title" text-anchor="middle">CONTROL SELECTORS</text>
-                <text x="30" y="52" class="pin-label">S1 = <tspan class="pin-val ${valClass(s1)}">${valText(s1)}</tspan></text>
-                <text x="30" y="76" class="pin-label">S0 = <tspan class="pin-val ${valClass(s0)}">${valText(s0)}</tspan></text>
-                <text x="140" y="65" class="wire-annotation ${valClass(1)}">${sim.operation}</text>
-            </g>
-
-            <!-- Operands A and B at Top -->
-            <g transform="translate(320, 60)">
-                <rect x="0" y="0" width="300" height="90" rx="6" class="subcircuit-box"/>
-                <text x="150" y="24" class="subcircuit-title" text-anchor="middle">4-BIT OPERAND REGISTERS</text>
-                <text x="40" y="52" class="pin-label">Operand A = <tspan class="pin-val">${CircuitSimulator.toBinary4(a)}</tspan> (${a})</text>
-                <text x="40" y="76" class="pin-label">Operand B = <tspan class="pin-val">${CircuitSimulator.toBinary4(b)}</tspan> (${b})</text>
-            </g>
-
-            <!-- Selected Y and Cin Status Box -->
-            <g transform="translate(660, 60)">
-                <rect x="0" y="0" width="300" height="90" rx="6" class="subcircuit-box"/>
-                <text x="150" y="24" class="subcircuit-title" text-anchor="middle">MUX STAGE OUTPUTS</text>
-                <text x="40" y="52" class="pin-label">Selected Y = <tspan class="pin-val">${CircuitSimulator.toBinary4(sim.y)}</tspan> (${sim.y})</text>
-                <text x="40" y="76" class="pin-label">Carry In (Cin) = <tspan class="pin-val ${valClass(sim.cin)}">${valText(sim.cin)}</tspan></text>
-            </g>
-
-            <!-- MUX STAGE ROW (Y0 to Y3) -->
+            <!-- ==========================================================
+                 CENTRAL SECTION: FOUR FULL ADDERS (FA0 - FA3)
+                 EACH CONSTRUCTED FROM 2 XOR, 2 AND, 1 OR GATE!
+                 ========================================================== -->
             ${[0, 1, 2, 3].map(i => {
-                const x = 740 - i * 200; // Stage 0 at 740, Stage 3 at 140
-                const bitB = (b >> i) & 1;
-                const bitY = (sim.y >> i) & 1;
-                return `
-                <g transform="translate(${x}, 180)">
-                    <polygon points="0,0 80,0 70,70 10,70" class="mux-polygon"/>
-                    <text x="40" y="32" class="mux-label mini-label" text-anchor="middle">MUX ${i}</text>
-                    <text x="40" y="50" class="mux-sub" font-size="9" text-anchor="middle">B${i}=${bitB}</text>
+                const x0 = faX[i];
+                const stg = stages[i];
+                const isReady = stageReady[i];
+                const isCurrent = animStep === (i + 2);
 
-                    <!-- Wire entering MUX from top -->
-                    <path d="M 40,-25 L 40,0" class="wire ${valClass(bitB)}"/>
-                    <!-- Wire from MUX down to Adder Stage -->
-                    <path d="M 40,70 L 40,110" class="wire ${valClass(bitY)}"/>
-                    <text x="50" y="95" class="wire-annotation ${valClass(bitY)}">Y${i}=${bitY}</text>
+                const bitA = (a >> i) & 1;
+                const bitY = (y >> i) & 1;
+                const cinVal = stg.cin;
+                const pVal = stg.p;
+                const gVal = stg.g;
+                const hVal = stg.h;
+                const sumVal = stg.sum;
+                const coutVal = stg.cout;
+
+                // Carry wire to next stage
+                const nextX = (i < 3) ? faX[i + 1] : 1310;
+
+                return `
+                <!-- Stage ${i} Enclosure Box -->
+                <rect x="${x0}" y="300" width="280" height="360" rx="4" 
+                      class="stage-enclosure" 
+                      stroke="${isCurrent ? '#DC5555' : '#CBD5E1'}" 
+                      stroke-width="${isCurrent ? '2' : '1.2'}"/>
+                
+                <!-- Stage Header -->
+                <text x="${x0 + 140}" y="322" class="stage-title" text-anchor="middle">
+                    STAGE ${i}: FULL ADDER ${i} ${i === 0 ? '(LSB)' : i === 3 ? '(MSB)' : ''}
+                </text>
+
+                <!-- Input Wire A${i} entering from top -->
+                <path d="M ${x0 + 40}, 280 L ${x0 + 40}, 375 L ${x0 + 70}, 375" 
+                      class="wire ${this.wireColorClass(bitA, 'a')}"/>
+                <!-- Branch A${i} down to AND 1 -->
+                <path d="M ${x0 + 40}, 375 L ${x0 + 40}, 435 L ${x0 + 70}, 435" 
+                      class="wire ${this.wireColorClass(bitA, 'a')}"/>
+                <circle cx="${x0 + 40}" cy="375" r="2.5" fill="#2563EB"/>
+                
+                <!-- Pin A${i} Display -->
+                <g class="interactive-pin" onclick="App.toggleSimBit('A', ${i})" style="cursor: pointer;" transform="translate(${x0 + 15}, 265)">
+                    <rect x="0" y="0" width="45" height="20" rx="2" class="pin-box" stroke="#2563EB"/>
+                    <text x="22" y="14" class="pin-text" text-anchor="middle">A${i}=<tspan class="${this.valColorClass(bitA)}">${bitA}</tspan></text>
+                </g>
+
+                <!-- Input Wire Y${i} entering from top -->
+                <path d="M ${x0 + 60}, 280 L ${x0 + 60}, 390 L ${x0 + 70}, 390" 
+                      class="wire ${muxReady ? this.wireColorClass(bitY, 'y') : 'wire-low'}"/>
+                <!-- Branch Y${i} down to AND 1 -->
+                <path d="M ${x0 + 60}, 390 L ${x0 + 60}, 450 L ${x0 + 70}, 450" 
+                      class="wire ${muxReady ? this.wireColorClass(bitY, 'y') : 'wire-low'}"/>
+                <circle cx="${x0 + 60}" cy="390" r="2.5" fill="#7C3AED"/>
+                
+                <!-- Pin Y${i} Display -->
+                <g transform="translate(${x0 + 65}, 265)">
+                    <rect x="0" y="0" width="45" height="20" rx="2" class="pin-box" stroke="#7C3AED"/>
+                    <text x="22" y="14" class="pin-text" text-anchor="middle">Y${i}=<tspan class="${muxReady ? this.valColorClass(bitY) : 'val-low'}">${muxReady ? bitY : '-'}</tspan></text>
+                </g>
+
+
+                <!-- ================= GATE 1: XOR 1 (P = A XOR Y) ================= -->
+                <g transform="translate(${x0 + 70}, 365)">
+                    <!-- XOR Gate Outline -->
+                    <path d="M 0,0 Q 15,18 0,36" fill="none" stroke="#475569" stroke-width="1.6"/>
+                    <path d="M 6,0 Q 20,18 6,36 Q 35,34 50,18 Q 35,2 6,0 Z" class="gate-body"/>
+                    <text x="25" y="22" class="gate-label" text-anchor="middle">XOR1</text>
+                </g>
+                <!-- Wire P = A XOR Y -->
+                <path d="M ${x0 + 120}, 383 L ${x0 + 160}, 383 L ${x0 + 160}, 510 L ${x0 + 180}, 510" 
+                      class="wire ${isReady ? this.wireColorClass(pVal) : 'wire-low'}"/>
+                <!-- Branch P down to AND 2 -->
+                <path d="M ${x0 + 160}, 510 L ${x0 + 160}, 590 L ${x0 + 180}, 590" 
+                      class="wire ${isReady ? this.wireColorClass(pVal) : 'wire-low'}"/>
+                <circle cx="${x0 + 160}" cy="510" r="2.5" fill="#475569"/>
+                <text x="${x0 + 130}" y="377" class="signal-tag">P${i}=${isReady ? pVal : '-'}</text>
+
+
+                <!-- ================= GATE 2: AND 1 (G = A AND Y) ================= -->
+                <g transform="translate(${x0 + 70}, 430)">
+                    <!-- AND Gate Outline -->
+                    <path d="M 0,0 L 25,0 Q 48,0 48,18 Q 48,36 25,36 L 0,36 Z" class="gate-body"/>
+                    <text x="22" y="22" class="gate-label" text-anchor="middle">AND1</text>
+                </g>
+                <!-- Wire G = A AND Y leading into OR gate -->
+                <path d="M ${x0 + 118}, 448 L ${x0 + 225}, 448" 
+                      class="wire ${isReady ? this.wireColorClass(gVal) : 'wire-low'}"/>
+                <text x="${x0 + 130}" y="442" class="signal-tag">G${i}=${isReady ? gVal : '-'}</text>
+
+
+                <!-- ================= GATE 3: XOR 2 (SUM = P XOR Cin) ================= -->
+                <!-- Cin wire branch into XOR 2 and AND 2 -->
+                <path d="M ${x0}, 525 L ${x0 + 145}, 525 L ${x0 + 145}, 525 L ${x0 + 180}, 525" 
+                      class="wire ${isReady ? this.wireColorClass(cinVal, 'carry') : 'wire-low'}"/>
+                <!-- Branch Cin down to AND 2 -->
+                <path d="M ${x0 + 145}, 525 L ${x0 + 145}, 605 L ${x0 + 180}, 605" 
+                      class="wire ${isReady ? this.wireColorClass(cinVal, 'carry') : 'wire-low'}"/>
+                <circle cx="${x0 + 145}" cy="525" r="2.5" fill="#DC5555"/>
+                <text x="${x0 + 5}" y="520" class="signal-tag" fill="#DC5555">C${i-1 < 0 ? 'in' : i-1}=${isReady ? cinVal : '-'}</text>
+
+                <g transform="translate(${x0 + 180}, 505)">
+                    <path d="M 0,0 Q 15,18 0,36" fill="none" stroke="#475569" stroke-width="1.6"/>
+                    <path d="M 6,0 Q 20,18 6,36 Q 35,34 50,18 Q 35,2 6,0 Z" class="gate-body"/>
+                    <text x="25" y="22" class="gate-label" text-anchor="middle">XOR2</text>
+                </g>
+                
+                <!-- Output Wire SUM${i} dropping down to result bus -->
+                <path d="M ${x0 + 230}, 523 L ${x0 + 250}, 523 L ${x0 + 250}, 690" 
+                      class="wire ${isReady ? this.wireColorClass(sumVal) : 'wire-low'}" 
+                      stroke-width="2" marker-end="url(#arrow)"/>
+                <text x="${x0 + 235}" y="515" class="signal-tag" fill="#16865B">S${i}=${isReady ? sumVal : '-'}</text>
+
+
+                <!-- ================= GATE 4: AND 2 (H = P AND Cin) ================= -->
+                <g transform="translate(${x0 + 180}, 585)">
+                    <path d="M 0,0 L 25,0 Q 48,0 48,18 Q 48,36 25,36 L 0,36 Z" class="gate-body"/>
+                    <text x="22" y="22" class="gate-label" text-anchor="middle">AND2</text>
+                </g>
+                <!-- Wire H = P AND Cin up to OR gate -->
+                <path d="M ${x0 + 228}, 603 L ${x0 + 240}, 603 L ${x0 + 240}, 462 L ${x0 + 245}, 462" 
+                      class="wire ${isReady ? this.wireColorClass(hVal) : 'wire-low'}"/>
+                <text x="${x0 + 215}" y="580" class="signal-tag">H${i}=${isReady ? hVal : '-'}</text>
+
+
+                <!-- ================= GATE 5: OR 1 (Cout = G OR H) ================= -->
+                <g transform="translate(${x0 + 225}, 440)">
+                    <path d="M 0,0 Q 15,18 0,36 Q 30,34 50,18 Q 30,2 0,0 Z" class="gate-body"/>
+                    <text x="22" y="22" class="gate-label" text-anchor="middle">OR</text>
+                </g>
+
+                <!-- Carry Output Wire from OR gate to next stage -->
+                <path d="M ${x0 + 275}, 458 L ${nextX}, 458 ${i < 3 ? `L ${nextX}, 525 L ${nextX + 30}, 525` : ''}" 
+                      class="wire ${isReady ? this.wireColorClass(coutVal, 'carry') : 'wire-low'}" 
+                      stroke-width="2.2" marker-end="url(#arrow-carry)"/>
+                
+                <!-- Carry Label between stages -->
+                <g transform="translate(${x0 + 240}, 430)">
+                    <text x="25" y="0" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#DC5555" text-anchor="middle">
+                        C${i}=${isReady ? coutVal : '-'}
+                    </text>
                 </g>
                 `;
             }).join('')}
 
-            <!-- Carry-In wire into Stage 0 -->
-            <path d="M 940,360 L 820,360" class="wire ${valClass(sim.cin)} ${sim.cin ? 'wire-pulse' : ''}"/>
-            <g class="circuit-pin">
-                <rect x="850" y="342" width="75" height="34" rx="4" class="pin-box"/>
-                <text x="887" y="364" class="pin-label mini-label">Cin = ${valText(sim.cin)}</text>
+
+            <!-- ==========================================================
+                 FINAL CARRY-OUT BOX (MSB STAGE 3 COUT)
+                 ========================================================== -->
+            <!-- Wire from FA3 OR gate down to Cout display box -->
+            <path d="M 1310, 458 L 1330, 458 L 1330, 680" class="wire ${fa3Ready ? this.wireColorClass(carryOut, 'carry') : 'wire-low'}" stroke-width="2.4" marker-end="url(#arrow-carry)"/>
+            <g transform="translate(1275, 680)">
+                <rect x="0" y="0" width="95" height="42" rx="3" fill="#FFFFFF" stroke="#DC5555" stroke-width="1.6"/>
+                <text x="47" y="16" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="700" fill="#DC5555" text-anchor="middle">FINAL CARRY-OUT</text>
+                <text x="47" y="32" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="700" fill="#1E293B" text-anchor="middle">
+                    Cout = <tspan fill="${outReady && carryOut ? '#DC5555' : '#64748B'}">${outReady ? carryOut : '-'}</tspan>
+                </text>
             </g>
 
-            <!-- 4 FULL ADDER STAGES ROW -->
-            <!-- Ripple Carries: C1, C2, C3, Cout -->
-            <path d="M 740,360 L 620,360" class="wire ${valClass(stages[0].cout)} ${stages[0].cout ? 'wire-pulse' : ''}"/>
-            <text x="680" y="350" class="wire-annotation ${valClass(stages[0].cout)}" text-anchor="middle">C1 = ${valText(stages[0].cout)}</text>
 
-            <path d="M 540,360 L 420,360" class="wire ${valClass(stages[1].cout)} ${stages[1].cout ? 'wire-pulse' : ''}"/>
-            <text x="480" y="350" class="wire-annotation ${valClass(stages[1].cout)}" text-anchor="middle">C2 = ${valText(stages[1].cout)}</text>
+            <!-- ==========================================================
+                 BOTTOM RESULT BUS (S3 S2 S1 S0)
+                 ========================================================== -->
+            ${[0, 1, 2, 3].map(i => {
+                const x0 = faX[i] + 250;
+                const isReady = stageReady[i];
+                const sumBit = (result >> i) & 1;
 
-            <path d="M 340,360 L 220,360" class="wire ${valClass(stages[2].cout)} ${stages[2].cout ? 'wire-pulse' : ''}"/>
-            <text x="280" y="350" class="wire-annotation ${valClass(stages[2].cout)}" text-anchor="middle">C3 = ${valText(stages[2].cout)}</text>
-
-            <!-- Cout out of Stage 3 -->
-            <path d="M 140,360 L 50,360 L 50,490 L 100,490" class="wire ${valClass(stages[3].cout)} ${stages[3].cout ? 'wire-pulse' : ''}"/>
-            <g class="circuit-pin">
-                <rect x="80" y="472" width="100" height="36" rx="6" class="pin-box output-pin"/>
-                <text x="130" y="495" class="pin-label">Cout = <tspan class="pin-val ${valClass(stages[3].cout)}">${valText(stages[3].cout)}</tspan></text>
-            </g>
-
-            ${stages.map((stg) => {
-                const x = 740 - stg.stage * 200;
-                const i = stg.stage;
                 return `
-                <g class="fa-stage-group" transform="translate(${x}, 290)">
-                    <rect x="0" y="0" width="80" height="130" rx="8" class="fa-block"/>
-                    <text x="40" y="26" class="fa-title mini-title" text-anchor="middle">FA ${i}</text>
-                    <text x="40" y="42" class="fa-sub" font-size="9" text-anchor="middle">Bit ${i}</text>
-
-                    <text x="40" y="66" class="fa-pin-name" text-anchor="middle">A${i}:${stg.bitA}</text>
-                    <text x="40" y="82" class="fa-pin-name" text-anchor="middle">Y${i}:${stg.bitY}</text>
-                    <text x="40" y="112" class="fa-pin-name" text-anchor="middle">S${i}:${stg.sum}</text>
-                </g>
-
-                <!-- Ai input line entering from top left -->
-                <path d="M ${x + 20},180 L ${x + 20},290" class="wire ${valClass(stg.bitA)}"/>
-
-                <!-- Sum Si line dropping to bus -->
-                <path d="M ${x + 40},420 L ${x + 40},490" class="wire ${valClass(stg.sum)}"/>
-                <g class="circuit-pin">
-                    <rect x="${x + 15}" y="480" width="50" height="32" rx="4" class="pin-box output-pin mini-pin"/>
-                    <text x="${x + 40}" y="501" class="pin-label mini-label">S${i}=${valText(stg.sum)}</text>
+                <g transform="translate(${x0 - 25}, 680)">
+                    <rect x="0" y="0" width="50" height="42" rx="3" fill="#FFFFFF" stroke="#1E293B" stroke-width="1.4"/>
+                    <text x="25" y="16" font-family="'JetBrains Mono', monospace" font-size="9" fill="#64748B" text-anchor="middle">SUM S${i}</text>
+                    <text x="25" y="33" font-family="'JetBrains Mono', monospace" font-size="14" font-weight="800" fill="${isReady && sumBit ? '#16865B' : '#64748B'}" text-anchor="middle">
+                        ${isReady ? sumBit : '-'}
+                    </text>
                 </g>
                 `;
             }).join('')}
 
-            <!-- Bottom Result Banner -->
-            <rect x="220" y="540" width="600" height="55" rx="8" class="bus-container"/>
-            <text x="520" y="565" class="bus-text" text-anchor="middle" font-size="16">
-                CALCULATION RESULT: ${sim.operation.toUpperCase()} (${sim.formula})
-            </text>
-            <text x="520" y="585" class="bus-sub" text-anchor="middle" font-size="13">
-                Binary Sum = <tspan class="pin-val">${CircuitSimulator.toBinary4(sim.result)}</tspan> | Decimal = ${sim.result} | Cout = ${sim.carryOut} ${sim.signedDiff !== null ? ` | Signed = ${sim.signedDiff}` : ''}
-            </text>
+            <!-- Output Bus Label -->
+            <g transform="translate(70, 730)">
+                <rect x="0" y="0" width="1200" height="30" rx="3" fill="#F0F3F7" stroke="#CBD5E1" stroke-width="1"/>
+                <text x="600" y="20" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" fill="#1E293B" text-anchor="middle">
+                    FOUR-BIT RESULT VECTOR: [S3 S2 S1 S0] = ${outReady ? this.toBinary4(result) : '----'} &nbsp;|&nbsp; 
+                    DECIMAL = ${outReady ? result : '--'} &nbsp;|&nbsp; 
+                    CARRY-OUT (Cout) = ${outReady ? carryOut : '-'}
+                    ${sim.signedDiff !== null && outReady ? ` &nbsp;|&nbsp; SIGNED (A - B) = ${sim.signedDiff}` : ''}
+                </text>
+            </g>
+
         </svg>`;
 
         const container = document.getElementById(containerId);
-        if (container) container.innerHTML = svg;
-    },
-
-    // Render Basic Gate (AND, OR, NOT, XOR)
-    renderLogicGate(containerId, gateType = 'AND', inA = 1, inB = 0) {
-        let outVal = 0;
-        let symbolSvg = '';
-        const a = inA & 1;
-        const b = inB & 1;
-
-        if (gateType === 'AND') {
-            outVal = a & b;
-            symbolSvg = `
-                <path d="M 20,20 L 60,20 Q 100,20 100,45 Q 100,70 60,70 L 20,70 Z" class="gate-body"/>
-                <text x="55" y="49" class="gate-label">AND</text>
-            `;
-        } else if (gateType === 'OR') {
-            outVal = a | b;
-            symbolSvg = `
-                <path d="M 10,20 Q 30,45 10,70 Q 55,68 95,45 Q 55,22 10,20 Z" class="gate-body"/>
-                <text x="45" y="49" class="gate-label">OR</text>
-            `;
-        } else if (gateType === 'XOR') {
-            outVal = a ^ b;
-            symbolSvg = `
-                <path d="M 0,20 Q 20,45 0,70" fill="none" class="gate-body-outline" stroke-width="2.5"/>
-                <path d="M 12,20 Q 32,45 12,70 Q 55,68 95,45 Q 55,22 12,20 Z" class="gate-body"/>
-                <text x="48" y="49" class="gate-label">XOR</text>
-            `;
-        } else if (gateType === 'NOT') {
-            outVal = a ? 0 : 1;
-            symbolSvg = `
-                <polygon points="20,20 80,45 20,70" class="gate-body"/>
-                <circle cx="85" cy="45" r="4.5" fill="#0D1527" stroke="#38BDF8" stroke-width="2"/>
-                <text x="42" y="49" class="gate-label">NOT</text>
-            `;
+        if (container) {
+            container.innerHTML = svg;
         }
-
-        const valClass = (v) => (v ? "wire-high" : "wire-low");
-        const valText = (v) => (v ? "1" : "0");
-
-        const isNot = gateType === 'NOT';
-
-        const svg = `
-        <svg viewBox="0 0 380 180" width="100%" class="circuit-svg mini-gate-svg" xmlns="http://www.w3.org/2000/svg">
-            <!-- Input A -->
-            <path d="M 30,${isNot ? 90 : 65} L 120,${isNot ? 90 : 65}" class="wire ${valClass(a)}"/>
-            <g class="circuit-pin interactive-pin" onclick="App.toggleGatePrimitiveBit('${gateType}', 'a')">
-                <rect x="5" y="${isNot ? 75 : 50}" width="45" height="28" rx="4" class="pin-box mini-pin"/>
-                <text x="27" y="${isNot ? 94 : 69}" class="pin-label mini-label">A:${valText(a)}</text>
-            </g>
-
-            ${!isNot ? `
-            <!-- Input B -->
-            <path d="M 30,115 L 120,115" class="wire ${valClass(b)}"/>
-            <g class="circuit-pin interactive-pin" onclick="App.toggleGatePrimitiveBit('${gateType}', 'b')">
-                <rect x="5" y="100" width="45" height="28" rx="4" class="pin-box mini-pin"/>
-                <text x="27" y="119" class="pin-label mini-label">B:${valText(b)}</text>
-            </g>
-            ` : ''}
-
-            <!-- Gate Symbol Group -->
-            <g class="gate-group" transform="translate(120, 45)">
-                ${symbolSvg}
-            </g>
-
-            <!-- Output Line -->
-            <path d="M ${isNot ? 210 : 220},90 L 290,90" class="wire ${valClass(outVal)}"/>
-            <g class="circuit-pin">
-                <rect x="290" y="75" width="75" height="30" rx="4" class="pin-box output-pin mini-pin"/>
-                <text x="327" y="95" class="pin-label mini-label">Y = ${valText(outVal)}</text>
-            </g>
-        </svg>`;
-
-        const container = document.getElementById(containerId);
-        if (container) container.innerHTML = svg;
     }
 };
 
+// Export for module environments
 if (typeof module !== "undefined" && module.exports) {
     module.exports = CircuitDiagrams;
 }

@@ -10,20 +10,31 @@ const CircuitSimulator = {
         b = b & 1;
         cin = cin & 1;
 
-        const a_xor_b = a ^ b;
-        const a_and_b = a & b;
-        const cin_and_prop = cin & a_xor_b;
-
-        const sum = a_xor_b ^ cin;
-        const cout = a_and_b | cin_and_prop;
+        // Gate equations:
+        // P = A XOR B (Propagate)
+        // SUM = P XOR Cin
+        // G = A AND B (Generate)
+        // H = P AND Cin
+        // Cout = G OR H
+        const p = a ^ b;
+        const sum = p ^ cin;
+        const g = a & b;
+        const h = p & cin;
+        const cout = g | h;
 
         return {
+            a,
+            b,
+            cin,
+            p,
+            g,
+            h,
             sum,
             cout,
             intermediate: {
-                a_xor_b,
-                a_and_b,
-                cin_and_prop
+                a_xor_b: p,
+                a_and_b: g,
+                cin_and_prop: h
             }
         };
     },
@@ -109,6 +120,9 @@ const CircuitSimulator = {
                 bitA,
                 bitY,
                 cin: currentCarry,
+                p: stageRes.p,
+                g: stageRes.g,
+                h: stageRes.h,
                 sum: stageRes.sum,
                 cout: stageRes.cout,
                 intermediate: stageRes.intermediate

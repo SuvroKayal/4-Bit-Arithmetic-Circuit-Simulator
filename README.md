@@ -1,330 +1,659 @@
 # 4-Bit Arithmetic Circuit Simulator
 
-A Python-based simulation of a **4-bit Arithmetic Circuit** that performs four fundamental arithmetic operations: Addition, Subtraction, Increment, and Decrement.
+A Computer Organization and Architecture (COA) mini-project that demonstrates how **one shared 4-bit ripple-carry adder** can perform four arithmetic operations—addition, subtraction, increment, and decrement—by changing only its selected second operand and initial carry input.
 
-The project demonstrates the working principles of a 4-bit Full Adder, Multiplexer (MUX), and Control Lines using simple Python programming.
+The project contains:
+- a Python implementation of the arithmetic circuit;
+- a command-line interface;
+- a browser-based interactive simulator;
+- a gate-level circuit visualization with live signal values; and
+- an automated test program covering 1,024 input/operation combinations.
+
+> **Core idea:** the adder itself is not replaced for each operation. The same four cascaded full-adder stages are reused. The control inputs `S1` and `S0` select the value sent to the adder as `Y` and select its initial carry `Cin`.
 
 ---
 
-## 1. Project Overview
+## 1. Notation and symbols
 
-The objective of this project is to design and simulate a 4-bit arithmetic circuit using a common adder architecture.
+The notation used in the explanations and diagrams is defined here before it is used.
 
-The circuit performs four operations:
+| Symbol | Meaning |
+|---|---|
+| `A` | First 4-bit operand, `A3 A2 A1 A0` |
+| `B` | Second 4-bit operand, `B3 B2 B1 B0` |
+| `S1`, `S0` | Two operation-selection control bits |
+| `Y` | 4-bit value selected as the second input to the adder |
+| `Cin` | Initial carry input supplied to the least-significant full adder |
+| `C0` | Carry entering bit 0; therefore `C0 = Cin` |
+| `Ci` | Carry entering bit position `i` |
+| `C(i+1)` | Carry leaving bit position `i` and entering the next stage |
+| `Cout` | Final carry leaving the most-significant stage, `C4` |
+| `R` | 4-bit result, `R3 R2 R1 R0` |
+| `Ai`, `Yi` | Bit `i` of `A` and `Y` |
+| `Ri` | Result bit produced by full-adder stage `i` |
+| `⊕` | XOR (exclusive-OR) operation |
+| `·` or `AND` | Logical AND operation |
+| `+` or `OR` in Boolean equations | Logical OR operation; in arithmetic expressions, `+` means addition |
+| `B'` or `B̅` | Bitwise complement of `B` (each 0 becomes 1 and each 1 becomes 0) |
+| `2's complement` | Bitwise complement plus 1; used to represent a negative number in binary |
+| `LSB` | Least significant bit, bit 0 |
+| `MSB` | Most significant bit, bit 3 |
+| `& 15` | Keeps only the lowest four bits of an integer (`15 = 1111₂`) |
+| `>> i` | Right-shifts a value by `i` positions |
+| `<< i` | Left-shifts a value by `i` positions |
 
-- Addition (A + B)
-- Subtraction (A - B)
-- Increment (A + 1)
-- Decrement (A - 1)
+### 4-bit range
 
-Two selection bits (S1 and S0) control the operation. A multiplexer selects the appropriate second operand (Y) and Carry-In (Cin), which are then supplied to the 4-bit Full Adder.
+The input operands are unsigned 4-bit values:
 
-The final output consists of a 4-bit binary result and a Carry-Out bit.
+\[
+0000_2 \leq A,B \leq 1111_2
+\]
 
-## 2. Project Objectives
+That is, decimal values **0 through 15**. The adder produces a 4-bit result and a separate carry-out bit. Consequently, the full unsigned sum is represented by the pair `Cout R3R2R1R0`.
 
-- Understand the working principle of a 4-bit Full Adder.
-- Implement arithmetic operations using a common adder.
-- Understand Multiplexer (MUX) selection logic.
-- Use control lines to select different arithmetic operations.
-- Implement binary addition using Boolean logic.
-- Understand two's complement subtraction.
-- Verify the circuit using different binary inputs.
+---
 
-## 3. Hardware Logic and Selection Table
+## 2. Operation selection table
 
-The arithmetic circuit follows this general equation:
+The control lines choose one of four arithmetic operations. The same control combination is used by the second-operand selector and the carry-in selector.
 
-**Total = A + Y + Cin**
+| `S1` | `S0` | Operation | Selected `Y` | `Cin` | Arithmetic performed |
+|:---:|:---:|---|---|:---:|---|
+| 0 | 0 | Addition | `B` | 0 | `A + B` |
+| 0 | 1 | Subtraction | `B'` | 1 | `A + B' + 1 = A - B` |
+| 1 | 0 | Increment | `0000` | 1 | `A + 0 + 1 = A + 1` |
+| 1 | 1 | Decrement | `1111` | 0 | `A + 1111₂ = A - 1` (modulo 16) |
 
-The selection lines determine the values of Y and Cin.
+The circuit therefore implements the common expression:
 
-| S1 | S0 | Y (Second Operand) | Cin | Operation |
-|:---:|:---:|:---:|:---:|---|
-| 0 | 0 | B | 0 | Addition |
-| 0 | 1 | B̅ | 1 | Subtraction |
-| 1 | 0 | 0000 | 1 | Increment |
-| 1 | 1 | 1111 | 0 | Decrement |
+\[
+\boxed{R = A + Y + Cin \pmod {16}}
+\]
 
-### Mathematical Operations
+`Cout` is calculated by the adder and reported separately.
 
-**1. Addition**
+### Why the four rows work
 
-A + B
+1. **Addition (`00`)**: pass `B` unchanged and start with no carry. The adder computes `A + B`.
+2. **Subtraction (`01`)**: invert all four bits of `B` and start with carry 1. In 4-bit two's-complement arithmetic, `B' + 1` is `-B`, so the adder computes `A - B`.
+3. **Increment (`10`)**: select zero for `Y` and start with carry 1. The adder computes `A + 1`.
+4. **Decrement (`11`)**: select `1111₂`. In 4-bit two's-complement representation, `1111₂` represents `-1`; adding it decrements `A` modulo 16.
 
-**2. Subtraction**
+For increment and decrement, `B` does not affect the mathematical result. The command-line program sets `B = 0` for these operations, while the browser simulator may still display the B input as bypassed.
 
-A - B = A + B̅ + 1
+---
 
-Subtraction is performed using two's complement.
+## 3. Overall circuit architecture
 
-**3. Increment**
+The design has two selection paths controlled by `S1` and `S0`:
 
-A + 1 = A + 0000 + 1
+- a **4-bit second-operand selector** produces `Y`;
+- a **carry-in selector** produces `Cin`.
 
-**4. Decrement**
+`A`, `Y`, and `Cin` then enter one shared 4-bit ripple-carry adder.
 
-A - 1 = A + 1111 + 0
+```mermaid
+flowchart LR
+    A["A[3:0]"] --> ADD["Shared 4-bit<br/>Ripple-Carry Adder"]
+    B["B[3:0]"] --> YMUX["Second-operand<br/>selection"]
+    CTRL["S1, S0"] --> YMUX
+    CTRL --> CMUX["Carry-in<br/>selection"]
+    YMUX -->|"Y[3:0]"| ADD
+    CMUX -->|"Cin"| ADD
+    ADD -->|"R[3:0]"| RESULT["4-bit Result"]
+    ADD -->|"Cout"| CARRY["Carry-out"]
+```
 
-Here, 1111 represents -1 in 4-bit two's complement.
-
-## 4. Project Architecture
-
-The project is divided into five Python files.
+### Selected inputs
 
 ```text
-4-Bit-Arithmetic-Circuit-Simulator/
-│
-├── index.html              # Modern, interactive educational website
-├── styles.css              # Dark digital electronics / engineering design system
-├── simulator.js            # Core JavaScript circuit simulation & test engine
-├── circuit_diagrams.js     # Technically accurate interactive SVG schematic renderer
-├── app.js                  # UI controllers, presentation mode, stepper, sound
-├── server.py               # Lightweight local web server & runner
-│
-├── main.py                 # Original Python CLI controller
-├── multiplexer.py          # Python Multiplexer & carry-in logic
-├── full_adder.py           # Python 1-bit and 4-bit Ripple Carry Adder
-├── arithmetic_circuit.py   # Python top-level arithmetic circuit orchestrator
-└── test_circuit.py         # Python 1,024 automated verification test suite
+                 S1, S0
+                    |
+          +---------+----------+
+          |                    |
+    +-----------+        +-----------+
+B ->| Y selector|        | Cin selector|
+    | 4-bit     |        | 1-bit      |
+    +-----+-----+        +-----+-----+
+          |                    |
+        Y[3:0]                Cin
+          |                    |
+          +---------+----------+
+                    |
+A[3:0] ------------+
+                    v
+           +------------------+
+           | 4-bit Ripple-    |
+           | Carry Adder      |
+           | FA0 -> FA1 ->     |
+           | FA2 -> FA3        |
+           +--------+---------+
+                    |
+             +------+------+
+             |             |
+          R[3:0]          Cout
 ```
 
-### File Descriptions
+The browser's circuit page draws the selected input paths, the two 4:1 selector blocks, the four full-adder stages, and their gate-level logic. The Python implementation performs the same selection and arithmetic in functions.
 
-| File | Description |
+---
+
+## 4. Multiplexer / input-selection logic
+
+A multiplexer (MUX) selects one of several inputs according to select lines. In this project, `S1S0` acts as a two-bit selector:
+
+| Select value | Selected channel |
 |---|---|
-| `index.html` | Interactive web dashboard featuring circuit diagrams first, live simulator, truth tables, and theory. |
-| `styles.css` | Professional engineering dark theme with glowing PCB traces, responsive layout, and projector mode. |
-| `simulator.js` | Direct port of the Python circuit logic for client-side execution, signal tracing, and 1,024 tests. |
-| `circuit_diagrams.js` | Interactive IEEE-standard SVG circuit diagrams with dynamic high/low logic wire illumination. |
-| `app.js` | UI logic, slide-deck presentation mode, step-by-step carry propagation animator, and Web Audio API. |
-| `server.py` | Local web server (`http://localhost:8000`) and unified runner. |
-| `main.py` | Original CLI controller that handles terminal user input, menu selection, and formatted output display. |
-| `multiplexer.py` | Selects the second operand Y and Carry-In according to S1 and S0. |
-| `full_adder.py` | Implements 1-bit Full Adder logic and connects four stages to create a 4-bit adder. |
-| `arithmetic_circuit.py` | Connects the multiplexer and 4-bit Full Adder to perform the selected operation. |
-| `test_circuit.py` | Tests all four arithmetic operations using all 1,024 input combinations. |
+| `00` | `D0` |
+| `01` | `D1` |
+| `10` | `D2` |
+| `11` | `D3` |
 
-## 5. Working Principle
+### 4.1 Second-operand selector
 
-The project follows these steps:
+The four data choices are:
 
-1. The user selects an arithmetic operation from the main menu.
-2. The program accepts the required 4-bit input values.
-3. The selection lines S1 and S0 are assigned according to the selected operation.
-4. The Multiplexer selects the appropriate Y and Cin values.
-5. The 4-bit Full Adder performs the binary addition.
-6. The circuit generates a 4-bit result and Carry-Out.
-7. The program displays the binary and decimal results.
+| MUX input | Value supplied to `Y` | Purpose |
+|---|---|---|
+| `D0` | `B` | Addition |
+| `D1` | `B'` | Subtraction |
+| `D2` | `0000` | Increment |
+| `D3` | `1111` | Decrement |
 
-### Full Adder Logic
+The selected value is a four-bit bus. For subtraction, each bit is inverted:
 
-The 1-bit Full Adder uses three inputs:
+\[
+Y_i = \overline{B_i}\quad\text{for }S1S0=01
+\]
 
-- A – First input bit.
-- B – Second input bit.
-- Cin – Carry input.
+For the other operations, `Y` is passed or forced to the constant shown in the table.
+
+### 4.2 Carry-in selector
+
+The carry-in choices are:
+
+| Select value | `Cin` | Operation |
+|---|:---:|---|
+| `00` | 0 | Addition |
+| `01` | 1 | Subtraction |
+| `10` | 1 | Increment |
+| `11` | 0 | Decrement |
+
+This is important: subtraction and increment both require an initial carry of 1, while addition and decrement start with 0.
+
+---
+
+## 5. The 1-bit full adder
+
+A full adder adds three one-bit inputs:
+- `Ai`: a bit from operand `A`;
+- `Yi`: the corresponding bit from selected operand `Y`;
+- `Ci`: the carry entering this bit position.
 
 It generates two outputs:
+- `Ri`: the sum bit;
+- `C(i+1)`: the carry sent to the next stage.
 
-- Sum – Result bit.
-- Cout – Carry output.
+### 5.1 Boolean equations
 
-**Boolean Expressions:**
+First calculate the propagate term:
 
-Sum:
+\[
+P_i = A_i \oplus Y_i
+\]
 
-`Sum = A XOR B XOR Cin`
+Then calculate the sum:
 
-Carry:
+\[
+\boxed{R_i = P_i \oplus C_i}
+\]
 
-`Cout = (A AND B) OR (Cin AND (A XOR B))`
+The carry-generation term is:
 
-Four Full Adder stages are connected in series to construct a 4-bit Ripple Carry Adder.
+\[
+G_i = A_i \cdot Y_i
+\]
 
-The carry generated by one stage is passed to the next stage.
+The carry-propagation term is:
 
-## 6. Requirements
+\[
+H_i = P_i \cdot C_i
+\]
 
-To run this project, you need:
+The outgoing carry is:
 
-- Python 3.x
-- Visual Studio Code (or any Python-supported IDE)
-- A terminal or command prompt
+\[
+\boxed{C_{i+1} = G_i + H_i}
+\]
 
-**External Python libraries:** None required.
+Equivalently:
 
-The project uses built-in Python functionality.
+\[
+C_{i+1} = (A_i \cdot Y_i) + (C_i \cdot (A_i \oplus Y_i))
+\]
 
-## 7. Installation and Execution
+Here, `+` between Boolean terms means OR.
 
-### Step 1: Clone the Repository
+### 5.2 Gate-level full-adder diagram
 
-```bash
-git clone YOUR_REPOSITORY_URL
+Each full-adder stage is constructed from **two XOR gates, two AND gates, and one OR gate**.
+
+```mermaid
+flowchart LR
+    A["Ai"] --> X1["XOR 1"]
+    Y["Yi"] --> X1
+    X1 -->|"Pi"| X2["XOR 2"]
+    CI["Ci"] --> X2
+    X2 --> SUM["Ri (Sum)"]
+
+    A --> AND1["AND 1"]
+    Y --> AND1
+    AND1 --> OR1["OR"]
+    X1 --> AND2["AND 2"]
+    CI --> AND2
+    AND2 --> OR1
+    OR1 --> CO["C(i+1) (Carry)"]
 ```
 
-Alternatively, download the project ZIP file and extract it.
+### 5.3 Full-adder truth table
 
-### Step 2: Open the Project Folder
+| `Ai` | `Yi` | `Ci` | `Ri` | `C(i+1)` |
+|:---:|:---:|:---:|:---:|:---:|
+| 0 | 0 | 0 | 0 | 0 |
+| 0 | 0 | 1 | 1 | 0 |
+| 0 | 1 | 0 | 1 | 0 |
+| 0 | 1 | 1 | 0 | 1 |
+| 1 | 0 | 0 | 1 | 0 |
+| 1 | 0 | 1 | 0 | 1 |
+| 1 | 1 | 0 | 0 | 1 |
+| 1 | 1 | 1 | 1 | 1 |
 
-```bash
-cd arithmetic_simulator
+---
+
+## 6. Four-bit ripple-carry adder
+
+A 4-bit adder is made by connecting four 1-bit full adders in series. The carry output of one stage becomes the carry input of the next stage.
+
+- `FA0` handles bit 0 (LSB).
+- `FA1` handles bit 1.
+- `FA2` handles bit 2.
+- `FA3` handles bit 3 (MSB).
+
+The first stage receives `Cin`. The final stage produces `Cout`.
+
+```mermaid
+flowchart LR
+    CIN["Cin = C0"] --> FA0["FA0<br/>Bit 0 (LSB)"]
+    A0["A0, Y0"] --> FA0
+    FA0 --> R0["R0"]
+    FA0 -->|"C1"| FA1["FA1<br/>Bit 1"]
+    A1["A1, Y1"] --> FA1
+    FA1 --> R1["R1"]
+    FA1 -->|"C2"| FA2["FA2<br/>Bit 2"]
+    A2["A2, Y2"] --> FA2
+    FA2 --> R2["R2"]
+    FA2 -->|"C3"| FA3["FA3<br/>Bit 3 (MSB)"]
+    A3["A3, Y3"] --> FA3
+    FA3 --> R3["R3"]
+    FA3 --> COUT["Cout = C4"]
 ```
 
-### Step 3: Run the Main Program
+The four stages compute:
+
+\[
+\begin{aligned}
+(R_0,C_1) &= FA(A_0,Y_0,C_0)\\
+(R_1,C_2) &= FA(A_1,Y_1,C_1)\\
+(R_2,C_3) &= FA(A_2,Y_2,C_2)\\
+(R_3,C_4) &= FA(A_3,Y_3,C_3)
+\end{aligned}
+\]
+
+The carry moves from the least-significant stage toward the most-significant stage. This is why the architecture is called a **ripple-carry adder**.
+
+### Gate count in the adder
+
+| Gate | Per full adder | Four stages |
+|---|---:|---:|
+| XOR | 2 | 8 |
+| AND | 2 | 8 |
+| OR | 1 | 4 |
+| **Total** | **5** | **20** |
+
+This count is for the four full-adder stages. It does not include the selector circuitry or the four bitwise inversion elements used to form `B'`.
+
+---
+
+## 7. How each operation is performed
+
+### 7.1 Addition
+
+Control: `S1S0 = 00`
+
+\[
+Y=B,\quad Cin=0
+\]
+
+\[
+R=A+B
+\]
+
+**Example:** `A = 0101₂ (5)`, `B = 0011₂ (3)`.
+
+```text
+       A = 0101
+       Y = 0011
+     Cin =    0
+     ------------
+       R = 1000
+    Cout =    0
+```
+
+Result: `1000₂ = 8`.
+
+### 7.2 Subtraction using two's complement
+
+Control: `S1S0 = 01`
+
+\[
+Y=B',\quad Cin=1
+\]
+
+\[
+R=A+B'+1=A-B
+\]
+
+**Example:** `A = 0101₂ (5)`, `B = 0011₂ (3)`.
+
+```text
+       B = 0011
+      B' = 1100
+       A = 0101
+       Y = 1100
+     Cin =    1
+     ------------
+       R = 0010
+    Cout =    1
+```
+
+Result: `0010₂ = 2`.
+
+For this subtraction method, `Cout = 1` means **no borrow** (`A >= B`), while `Cout = 0` means a borrow occurred (`A < B`). The four-bit result is the two's-complement representation of the difference modulo 16.
+
+### 7.3 Increment
+
+Control: `S1S0 = 10`
+
+\[
+Y=0000,\quad Cin=1
+\]
+
+\[
+R=A+0000+1=A+1
+\]
+
+**Example:** `A = 0101₂ (5)`.
+
+```text
+       A = 0101
+       Y = 0000
+     Cin =    1
+     ------------
+       R = 0110
+    Cout =    0
+```
+
+Result: `0110₂ = 6`.
+
+### 7.4 Decrement
+
+Control: `S1S0 = 11`
+
+\[
+Y=1111,\quad Cin=0
+\]
+
+Since `1111₂` is `-1` in four-bit two's-complement notation:
+
+\[
+R=A+1111=A-1\pmod {16}
+\]
+
+**Example:** `A = 0101₂ (5)`.
+
+```text
+       A = 0101
+       Y = 1111
+     Cin =    0
+     ------------
+       R = 0100
+    Cout =    1
+```
+
+Result: `0100₂ = 4`.
+
+---
+
+## 8. Understanding carry, borrow, overflow, and result width
+
+These terms describe different conditions and should not be confused.
+
+- **Result (`R`)**: always the lowest four bits of the adder output.
+- **Carry-out (`Cout`)**: the carry leaving the MSB. It is especially useful for unsigned addition and for interpreting borrow in subtraction.
+- **Borrow in subtraction**: for `A + B' + 1`, a final carry of 0 indicates a borrow; a final carry of 1 indicates no borrow.
+- **Signed interpretation**: if a four-bit result is interpreted as two's-complement signed data, values `0000`–`0111` mean 0 to 7 and `1000`–`1111` mean -8 to -1.
+- **Signed overflow**: the browser simulator also calculates overflow from the carry entering and leaving the MSB. Overflow is `C3 XOR C4`.
+
+The Python CLI prints the mathematical signed subtraction result separately for subtraction. The JavaScript simulator additionally calculates `signedInterpretation`, `borrowOccurred`, and `overflow` for display/inspection.
+
+---
+
+## 9. Program structure and responsibilities
+
+| File | Responsibility |
+|---|---|
+| `full_adder.py` | Implements a 1-bit full adder and combines four stages into a 4-bit ripple-carry adder. |
+| `multiplexer.py` | Uses `S1` and `S0` to select `Y`, `Cin`, and the operation name. |
+| `arithmetic_circuit.py` | Connects the input-selection function to the 4-bit adder; this is the main Python circuit interface. |
+| `main.py` | Command-line menu, input validation, control-bit mapping, and result display. |
+| `test_circuit.py` | Tests all four operations over all 16 × 16 pairs of input values. |
+| `server.py` | Starts a local threaded HTTP server, serves the browser interface, and offers CLI/test launch options. |
+| `index.html` | Browser interface structure and simulator sections. |
+| `styles.css` | Layout, typography, colors, responsive styling, and visual states. |
+| `app.js` | Browser interface behavior, input controls, animation/presentation interactions, and UI updates. |
+| `simulator.js` | JavaScript version of the full-adder, input-selection, ripple-carry, and operation logic. |
+| `circuit_diagrams.js` | Generates the browser's SVG gate-level schematic and updates the displayed signal paths/values. |
+
+### Python execution flow
+
+```mermaid
+flowchart TD
+    M["main.py: read A, B and operation"] --> S["Map operation to S1, S0"]
+    S --> P["arithmetic_circuit.py"]
+    P --> Q["multiplexer.py: select Y and Cin"]
+    Q --> F["full_adder.py: four_bit_adder"]
+    F --> FA["Four full_adder stages"]
+    FA --> OUT["Return operation, Y, Cin, result, Cout"]
+    OUT --> DISP["main.py: display result"]
+```
+
+### Full-adder software logic
+
+For each bit position, `full_adder.py` calculates:
+
+```python
+sum_bit = a ^ b ^ cin
+carry_out = (a & b) | (cin & (a ^ b))
+```
+
+`four_bit_adder()` extracts one bit at a time, starting at bit 0. It passes the carry to the next iteration and inserts each sum bit into its correct position in the result integer.
+
+### Input masking
+
+The main circuit uses:
+
+```python
+a = a & 15
+b = b & 15
+```
+
+Binary `15` is `1111`. A bitwise AND with `1111` removes any bits above bit 3, ensuring that the circuit operates on four-bit operands.
+
+---
+
+## 10. Browser simulator
+
+The web interface uses the JavaScript implementation in `simulator.js` to calculate the same arithmetic operation as the Python modules. `circuit_diagrams.js` uses the simulation output to draw an SVG schematic with live values and signal highlighting. The interface can animate the calculation through the selector and the four adder stages.
+
+The JavaScript simulator's `performOperation()` returns more diagnostic information than the compact Python function, including each full-adder stage's intermediate values (`P`, `G`, `H`), signed interpretation, subtraction borrow status, and signed overflow.
+
+The browser circuit view is a **visual representation of the logic**. The Python program is a software simulation; this project does not claim to be a physically wired hardware circuit.
+
+---
+
+## 11. Running the project
+
+### Requirements
+
+- Python 3.8 or later is suitable for the Python syntax used.
+- A modern web browser for the browser simulator.
+- No third-party Python package is imported by the core arithmetic modules shown in this project.
+
+### Option A: Run the command-line simulator
+
+Open a terminal in the project folder:
 
 ```bash
 python main.py
 ```
 
-### Step 4: Run the Test Suite
+Choose an operation, enter `A` and (for addition/subtraction) `B` as decimal values from 0 to 15, and read the binary result and carry-out.
 
-```bash
-python test_circuit.py
-```
+### Option B: Run the browser simulator
 
-### Step 5: Launch the Interactive Web Dashboard
-
-To launch the modern educational website with interactive circuit diagrams and simulation:
+From the project folder:
 
 ```bash
 python server.py
 ```
 
-Or simply open `index.html` in any web browser (Chrome, Firefox, Edge, Safari) — no external dependencies or installations required!
-
-To present in front of your professor:
-- Click **"▶ Presentation Mode"** or press Space/Arrow keys for the fullscreen projector slide deck.
-- Toggle **"📽️ Projector Mode"** for high-contrast presentation environments.
-- Toggle **"⚡ Run 1,024 Automated Tests"** to display real-time verification in the browser.
-
-## 8. Sample Execution
-
-Example: Addition of A = 5 and B = 3.
+The server prints a local address, normally:
 
 ```text
-==================================================
-       4-BIT ARITHMETIC CIRCUIT SIMULATOR
-==================================================
-
-Select an Operation:
-1. Addition
-2. Subtraction
-3. Increment
-4. Decrement
-5. Exit
-
-Enter your choice: 1
-
-Enter value of A (0-15): 5
-Enter value of B (0-15): 3
-
---------------------------------------------------
-          CALCULATION RESULT
---------------------------------------------------
-
-Operation : Addition
-Control S1 : 0
-Control S0 : 0
-
-Operand A  : 0101
-Operand B  : 0011
-
-Selected Y : 0011
-Carry In   : 0
-
---------------------------------------------------
-
-Binary Result  : 1000
-Decimal Result : 8
-Carry Out      : 0
-
---------------------------------------------------
+http://localhost:8000/
 ```
 
-## 9. Testing and Verification
+Open that address in a browser. If port 8000 is already occupied, the server attempts to use another available port in the next few ports.
 
-The project includes an automated testing module named `test_circuit.py`.
+You can also open `index.html` directly in a browser. Running through `server.py` is the recommended way to use the complete local web interface.
 
-It verifies the arithmetic operations using all possible combinations of 4-bit inputs.
-
-| Operation | Number of Tests |
-|---|---:|
-| Addition | 256 |
-| Subtraction | 256 |
-| Increment | 256 |
-| Decrement | 256 |
-| **Total** | **1,024** |
-
-Each test checks whether the calculated 4-bit result matches the expected arithmetic result and whether the carry output is correct.
-
-To execute the tests:
+### Option C: Run the automated tests
 
 ```bash
 python test_circuit.py
 ```
 
-## 10. Important Concepts Used
+Or use the server's test option:
 
-| Concept | Purpose |
-|---|---|
-| Binary Number System | Represents operands and results using 4 bits. |
-| Full Adder | Performs binary addition with carry input. |
-| Multiplexer | Selects the required second operand. |
-| Control Lines | Select the desired arithmetic operation. |
-| XOR Gate | Used in Sum calculation. |
-| AND Gate | Used in Carry calculation. |
-| OR Gate | Combines carry-generation conditions. |
-| Two's Complement | Performs binary subtraction. |
-| Ripple Carry Adder | Connects four Full Adder stages. |
-| Modular Programming | Divides the project into independent files. |
+```bash
+python server.py --test
+```
 
-## 11. Limitations
+To run the command-line application through the server entry point:
 
-- The simulator supports only 4-bit unsigned input values (0–15).
-- Results are restricted to 4 bits.
-- Carry-Out is displayed separately.
-- Negative subtraction results are represented using 4-bit two's complement.
-- The circuit is implemented as a Python software simulation, not a physical hardware circuit.
-- The multiplexer is represented using software selection logic rather than physically constructed MUX gates.
-
-## 12. Future Improvements
-
-Possible future enhancements include:
-
-- Graphical User Interface (GUI).
-- Visual representation of Full Adder stages.
-- Interactive Multiplexer selection.
-- Logic gate-level circuit visualization.
-- Support for larger bit-width arithmetic circuits.
-- Verilog or VHDL hardware implementation.
-
-## 13. Learning Outcomes
-
-Through this project, we demonstrate an understanding of:
-
-- Basic digital arithmetic circuits.
-- Binary addition and subtraction.
-- Full Adder Boolean equations.
-- Multiplexer selection logic.
-- Control signal-based operation selection.
-- Ripple Carry Adder architecture.
-- Python functions and modular programming.
-- Automated testing and verification.
-
-## 14. Conclusion
-
-The 4-Bit Arithmetic Circuit Simulator demonstrates how four fundamental arithmetic operations can be performed using a common adder architecture.
-
-By combining Multiplexer selection logic, control lines, and a 4-bit Ripple Carry Adder, the project simulates Addition, Subtraction, Increment, and Decrement operations.
-
-It provides a practical understanding of digital arithmetic circuit concepts through Python programming.
+```bash
+python server.py --cli
+```
 
 ---
 
-**Project:** 4-Bit Arithmetic Circuit Simulator  
-**Language:** Python  
-**Domain:** Computer Organization and Architecture  
-**Architecture:** Multiplexer + 4-bit Ripple Carry Adder  
-**Verification:** 1,024 Test Cases
+## 12. Testing and verification
+
+There are 16 possible values for `A` and 16 possible values for `B`, giving:
+
+\[
+16\times16=256
+\]
+
+input pairs for each operation. The test program checks all 256 pairs for each of the four control combinations:
+
+| Operation | Control | Input pairs tested |
+|---|---|---:|
+| Addition | `00` | 256 |
+| Subtraction | `01` | 256 |
+| Increment | `10` | 256 |
+| Decrement | `11` | 256 |
+| **Total** | | **1,024** |
+
+For each pair, the test:
+1. calls `perform_operation(a, b, s1, s0)`;
+2. calculates the expected arithmetic answer;
+3. masks the expected answer to four bits using `expected & 15`;
+4. calculates the expected carry from the selected adder inputs; and
+5. compares both the four-bit result and carry-out.
+
+**Note:** increment and decrement do not mathematically depend on `B`, but the test still loops through all 16 values of `B` for those control combinations. This is why the suite reports 256 tests for each operation.
+
+A passing run means the Python implementation agrees with the expected four-bit result and carry-out for all tested combinations.
+
+---
+
+## 13. Worked example: trace through the adder
+
+Take addition with `A = 0101₂`, `B = 0011₂`, and `S1S0 = 00`.
+
+The selector produces `Y = B = 0011` and `Cin = 0`.
+
+| Stage | `Ai` | `Yi` | Carry in | Sum bit | Carry out |
+|---|:---:|:---:|:---:|:---:|:---:|
+| FA0 (bit 0) | 1 | 1 | 0 | 0 | 1 |
+| FA1 (bit 1) | 0 | 1 | 1 | 0 | 1 |
+| FA2 (bit 2) | 1 | 0 | 1 | 0 | 1 |
+| FA3 (bit 3) | 0 | 0 | 1 | 1 | 0 |
+
+Reading the sum bits from MSB to LSB gives `R = 1000`. The final carry is `Cout = 0`, so the answer is decimal 8.
+
+---
+
+## 14. Limitations and scope
+
+- The arithmetic datapath is fixed at four bits.
+- Inputs are unsigned decimal values from 0 to 15.
+- The result bus is four bits; overflow beyond that width is not appended to the result bus. `Cout` is shown separately.
+- The core Python circuit returns the operation, selected `Y`, `Cin`, result, and carry-out. Additional signed diagnostics are implemented in the JavaScript simulator, not in the compact Python return value.
+- This is a software simulator and visual teaching aid, not a physical circuit or a synthesized HDL design.
+- The web schematic is an SVG visualization of the selected logic and gate-level adder stages.
+
+---
+
+## 15. Learning outcomes
+
+This mini-project demonstrates:
+
+1. Binary arithmetic using a fixed-width datapath.
+2. Full-adder sum and carry Boolean equations.
+3. Construction of a ripple-carry adder from four full adders.
+4. Reuse of one adder for multiple arithmetic operations.
+5. Two's-complement subtraction.
+6. Control-line operation selection.
+7. Bitwise operations and bit extraction in Python and JavaScript.
+8. Separation of circuit logic, user interface, visualization, and testing.
+9. Exhaustive testing over the complete 4-bit input space.
+
+---
+
+## 16. Conclusion
+
+The 4-Bit Arithmetic Circuit Simulator demonstrates how a single 4-bit ripple-carry adder can perform addition, subtraction, increment, and decrement. The control lines `S1` and `S0` select the second adder operand `Y` and the initial carry `Cin`. Four cascaded full adders then calculate the result and final carry.
+
+The central learning point is **hardware reuse through input selection**: instead of building four separate arithmetic units, the design changes the inputs to one shared adder to obtain four different operations.
+
+---
+
+**Project type:** COA Mini-Project  
+**Datapath:** 4-bit ripple-carry adder  
+**Arithmetic operations:** Addition, subtraction, increment, decrement  
+**Core implementation:** Python  
+**Interactive implementation:** HTML, CSS, JavaScript  
+**Verification:** 1,024 test cases
